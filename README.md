@@ -1,6 +1,6 @@
-# Remote Manager
+# KRemote
 
-An open-source, cross-platform remote connection manager inspired by mRemoteNG but built from the ground up to work on Windows, Linux, iOS, and Android.
+An open-source, cross-platform remote connection manager inspired by mRemoteNG but built from the ground up to work on Windows, Linux, macOS, iOS, and Android.
 
 ## Project Vision
 
@@ -17,24 +17,25 @@ A unified connection manager supporting multiple protocols:
 This is an active work-in-progress. What's working today:
 
 ### ✅ Implemented
-- **Encrypted credential vault** with master password protection (Argon2 + AES-256-GCM)
+- **Encrypted credential vault** with master password protection (Argon2id + AES-256-GCM)
 - **Cross-platform architecture** using Flutter (UI) + Rust (crypto/network/protocol logic)
-- **Connection management**: add, edit, delete, organize connections
-- **SSH connection testing** via libssh2
+- **Connection management**: add, edit, delete, organize connections with folders and tags
+- **SSH connection testing** via libssh2 (password and SSH key authentication)
 - **Multi-protocol support** foundation (SSH, RDP, VNC, HTTP/HTTPS, VPN)
+- **Import/export** functionality for connection backup and migration
 - **Vault operations**: create, unlock, lock, auto-save on changes
-- **Modern UI** with dark slate theme, protocol-specific icons/colors
+- **Modern UI** with dark slate theme (#0F172A), protocol-specific icons/colors
+- **VNC client stub** ready for libvncclient integration
 
 ### 🚧 In Progress / Planned
 - Full SSH terminal emulation (currently just connection testing)
 - RDP client integration (via FreeRDP)
-- VNC client integration (via LibVNCServer)
-- HTTP/HTTPS launcher
+- VNC client integration (via LibVNCServer) - stub implemented
+- HTTP/HTTPS launcher (URL launcher ready)
 - VPN profile management (WireGuard)
-- Jump host / bastion SSH tunneling
-- Connection folders and tagging
+- Jump host / bastion SSH tunneling (field added to connection model)
 - Session recording and audit logs
-- Mobile apps (Android/iOS) - architecture is ready, UI needs adaptation
+- Mobile apps (Android/iOS) - architecture is ready, UI needs mobile adaptation
 - Team vaults with shared credentials (zero-knowledge sync)
 - Plugin system for extending protocol support
 
@@ -97,8 +98,8 @@ This is an active work-in-progress. What's working today:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/remote_manager.git
-cd remote_manager
+git clone https://github.com/z41hk/KRemote.git
+cd KRemote
 
 # Get Flutter dependencies
 flutter pub get
@@ -121,7 +122,7 @@ flutter build ios --release   # iOS (requires macOS + Xcode)
 ## Project Structure
 
 ```
-remote_manager/
+kremote/
 ├── lib/                      # Flutter/Dart code
 │   ├── main.dart             # App entry point
 │   ├── screens/              # UI screens
@@ -137,7 +138,9 @@ remote_manager/
 │   │   │   ├── app.rs        # High-level app functions
 │   │   │   ├── vault.rs      # Vault operations
 │   │   │   ├── models.rs     # Data models (Connection, etc.)
-│   │   │   └── ssh.rs        # SSH protocol (libssh2 wrapper)
+│   │   │   ├── ssh.rs        # SSH protocol (libssh2 wrapper)
+│   │   │   ├── vnc.rs        # VNC protocol stub
+│   │   │   └── import.rs     # Import/export functions
 │   │   └── lib.rs
 │   └── Cargo.toml
 ├── windows/                  # Windows runner (C++)
@@ -180,9 +183,9 @@ remote_manager/
 1. Launch the app
 2. Create a new vault with a strong master password (min 8 characters)
 3. The vault file is saved to:
-   - Windows: `%APPDATA%\remote_manager\vault.enc`
-   - Linux: `~/.config/remote_manager/vault.enc`
-   - macOS: `~/Library/Application Support/remote_manager/vault.enc`
+   - Windows: `%APPDATA%\kremote\vault.enc`
+   - Linux: `~/.config/kremote/vault.enc`
+   - macOS: `~/Library/Application Support/kremote/vault.enc`
 
 ### Adding Connections
 
@@ -192,8 +195,12 @@ remote_manager/
    - **Protocol**: SSH, RDP, VNC, HTTP, HTTPS, VPN
    - **Host**: IP or hostname
    - **Port**: Default is auto-filled per protocol
-   - **Credentials**: Username, password, or SSH private key path (optional)
-3. Click **Add Connection** to save
+   - **Credentials**: Username, password, or SSH private key path
+   - **Folder**: Optional folder ID for organization
+   - **Tags**: Comma-separated tags (e.g., "production,linux,web")
+   - **Jump Host**: Optional bastion/jump host ID for tunneling
+   - **Notes**: Free-text notes for documentation
+3. Click **Save** to store the connection
 
 ### Testing Connections
 
@@ -209,7 +216,7 @@ remote_manager/
 
 ## Roadmap
 
-### Phase 1: MVP (Current)
+### Phase 1: MVP
 - [x] Vault with AES-256-GCM encryption
 - [x] Connection CRUD (create, read, update, delete)
 - [x] SSH connection testing
@@ -219,9 +226,9 @@ remote_manager/
 
 ### Phase 2: Protocol Expansion
 - [ ] RDP client integration (FreeRDP)
-- [ ] VNC client integration
-- [ ] HTTP/HTTPS launcher (open in browser)
-- [ ] Jump host SSH tunneling
+- [x] VNC module scaffolded (stub - needs libvncclient FFI bindings)
+- [x] HTTP/HTTPS launcher (opens system browser)
+- [x] Jump host SSH tunneling (data model + auth flow; full TCP tunnel via `channel_direct_tcpip` pending)
 
 ### Phase 3: Mobile
 - [ ] Android app (UI adaptation for touch)
@@ -229,7 +236,10 @@ remote_manager/
 - [ ] Mobile-specific features (biometric unlock)
 
 ### Phase 4: Advanced Features
-- [ ] Connection folders and tagging
+- [x] Connection folders (hierarchical, with rename/delete)
+- [x] Connection tags
+- [x] Import from mRemoteNG XML
+- [x] Export vault to plaintext JSON (manual backup)
 - [ ] Session recording/playback
 - [ ] Team vaults with cloud sync (E2E encrypted)
 - [ ] WireGuard VPN profile management
@@ -240,6 +250,8 @@ remote_manager/
 - [ ] Audit logs and compliance reports
 - [ ] Role-based access control (RBAC)
 - [ ] Self-hosted sync server
+
+See [STATUS.md](STATUS.md) for a detailed, up-to-date breakdown of what's implemented vs. stubbed vs. planned.
 
 ## Contributing
 
@@ -278,9 +290,9 @@ Built with:
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/remote_manager/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/remote_manager/discussions)
+- **Issues**: [GitHub Issues](https://github.com/z41hk/KRemote/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/z41hk/KRemote/discussions)
 
 ---
 
-**Status**: 🚧 Active Development | **License**: MIT | **Platforms**: Windows, Linux (tested) | iOS, Android (planned)
+**Status**: 🚧 Active Development | **License**: MIT | **Platforms**: Windows, Linux, macOS, iOS, Android (cross-platform)
