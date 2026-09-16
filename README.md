@@ -40,11 +40,11 @@ An open-source, cross-platform remote connection manager inspired by mRemoteNG b
 
 Pre-built binaries are available on the [Releases page](https://github.com/z41hk/KRemote/releases).
 
-**Latest: v0.3.0 (Windows x64 + Linux x64)**
-- **Windows**: Download `KRemote-v0.3.0-windows-x64.zip`, extract, and run `kremote.exe`
-- **Linux**: Download `KRemote-v0.3.0-linux-x64.tar.gz`, extract, and run `./kremote`
+**Latest: v0.3.1 (Windows x64 + Linux x64)**
+- **Windows**: Download `KRemote-v0.3.1-windows-x64.zip`, extract, and run `kremote.exe`
+- **Linux**: Download `KRemote-v0.3.1-linux-x64.tar.gz`, extract, and run `./kremote`
 - No installation required (portable)
-- New in this release: **Connect button** on connection cards (fixes missing way to launch SSH sessions), xterm upgraded to 4.0.0
+- New in this release: **Fixed SSH terminal keyboard input** — you can now type commands in SSH sessions
 - This is an early alpha — expect rough edges and breaking changes between releases
 
 ## Project Vision
