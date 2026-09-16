@@ -23,13 +23,13 @@ fn dirs_next_config_dir() -> String {
     #[cfg(target_os = "windows")]
     {
         std::env::var("APPDATA")
-            .map(|p| format!("{}/RemoteManager", p.replace('\\', "/")))
+            .map(|p| format!("{}/KRemote", p.replace('\\', "/")))
             .unwrap_or_else(|_| ".".to_string())
     }
     #[cfg(not(target_os = "windows"))]
     {
         std::env::var("HOME")
-            .map(|p| format!("{}/.config/remote_manager", p))
+            .map(|p| format!("{}/.config/kremote", p))
             .unwrap_or_else(|_| ".".to_string())
     }
 }

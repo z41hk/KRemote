@@ -1,5 +1,5 @@
 [package]
-name = "rust_lib_remote_manager"
+name = "rust_lib_kremote"
 version = "0.1.0"
 edition = "2021"
 

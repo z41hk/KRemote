@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.remotemanager" "\0"
-            VALUE "FileDescription", "remote_manager" "\0"
+            VALUE "CompanyName", "com.kremote" "\0"
+            VALUE "FileDescription", "KRemote" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "remote_manager" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.remotemanager. All rights reserved." "\0"
-            VALUE "OriginalFilename", "remote_manager.exe" "\0"
-            VALUE "ProductName", "remote_manager" "\0"
+            VALUE "InternalName", "kremote" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 com.kremote. All rights reserved." "\0"
+            VALUE "OriginalFilename", "kremote.exe" "\0"
+            VALUE "ProductName", "KRemote" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

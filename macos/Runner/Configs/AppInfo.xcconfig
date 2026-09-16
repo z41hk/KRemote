@@ -5,10 +5,10 @@
 // 'flutter create' template.
 
 // The application's name. By default this is also the title of the Flutter window.
-PRODUCT_NAME = remote_manager
+PRODUCT_NAME = KRemote
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.remotemanager.remoteManager
+PRODUCT_BUNDLE_IDENTIFIER = com.kremote.kremote
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2026 com.remotemanager. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2026 com.kremote. All rights reserved.

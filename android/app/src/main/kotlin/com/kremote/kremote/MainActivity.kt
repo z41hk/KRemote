@@ -1,4 +1,4 @@
-package com.remotemanager.remote_manager
+package com.kremote.kremote
 
 import io.flutter.embedding.android.FlutterActivity
 
