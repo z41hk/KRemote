@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="Icon/KRemote icon.png" alt="KRemote Icon" width="128"/>
+</div>
+
 # KRemote
 
 An open-source, cross-platform remote connection manager inspired by mRemoteNG but built from the ground up to work on Windows, Linux, macOS, iOS, and Android.
@@ -36,9 +40,10 @@ An open-source, cross-platform remote connection manager inspired by mRemoteNG b
 
 Pre-built binaries are available on the [Releases page](https://github.com/z41hk/KRemote/releases).
 
-**Latest: v0.1.0-alpha (Windows x64)**
-- Download `KRemote-v0.1.0-alpha-windows-x64.zip`, extract, and run `kremote.exe`
+**Latest: v0.2.0-alpha (Windows x64)**
+- Download `KRemote-v0.2.0-alpha-windows.zip`, extract, and run `kremote.exe`
 - No installation required (portable)
+- New in this release: interactive SSH terminal with PTY streaming, custom app icon
 - This is an early alpha — expect rough edges and breaking changes between releases
 
 ## Project Vision
@@ -260,8 +265,8 @@ kremote/
 - [x] Connection CRUD (create, read, update, delete)
 - [x] SSH connection testing
 - [x] Windows build working
+- [x] Full SSH terminal emulation (interactive PTY with streaming I/O)
 - [ ] Linux build verification
-- [ ] Full SSH terminal emulation
 
 ### Phase 2: Protocol Expansion
 - [ ] RDP client integration (FreeRDP)
