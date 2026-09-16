@@ -3,6 +3,7 @@ import 'package:kremote/src/rust/api/app.dart';
 import 'package:kremote/src/rust/api/models.dart';
 import 'vault_screen.dart';
 import 'connection_detail_screen.dart';
+import 'ssh_terminal_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -154,6 +155,45 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _connectToSession(Connection connection) async {
+    switch (connection.protocol) {
+      case Protocol.ssh:
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => SshTerminalScreen(connection: connection),
+          ),
+        );
+        break;
+      case Protocol.rdp:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('RDP support coming soon')),
+        );
+        break;
+      case Protocol.vnc:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('VNC support coming soon')),
+        );
+        break;
+      case Protocol.http:
+      case Protocol.https:
+        try {
+          final url = '${connection.protocol.name}://${connection.host}:${connection.port}';
+          await openUrl(url: url);
+        } catch (e) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to open URL: $e')),
+          );
+        }
+        break;
+      case Protocol.vpn:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('VPN support coming soon')),
+        );
+        break;
+    }
+  }
+
   void _lockVault() {
     lockVault();
     Navigator.of(context).pushReplacement(
@@ -239,6 +279,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   return _ConnectionCard(
                     connection: conn,
                     onTap: () => _editConnection(conn),
+                    onConnect: () => _connectToSession(conn),
                     onTest: () => _testConnection(conn),
                     onDelete: () => _deleteConnection(conn),
                   );
@@ -259,12 +300,14 @@ class _HomeScreenState extends State<HomeScreen> {
 class _ConnectionCard extends StatelessWidget {
   final Connection connection;
   final VoidCallback onTap;
+  final VoidCallback onConnect;
   final VoidCallback onTest;
   final VoidCallback onDelete;
 
   const _ConnectionCard({
     required this.connection,
     required this.onTap,
+    required this.onConnect,
     required this.onTest,
     required this.onDelete,
   });
@@ -357,6 +400,12 @@ class _ConnectionCard extends StatelessWidget {
                     ],
                   ],
                 ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.cable),
+                tooltip: 'Connect',
+                onPressed: onConnect,
+                color: const Color(0xFF4ADE80),
               ),
               IconButton(
                 icon: const Icon(Icons.play_arrow),
