@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:remote_manager/src/rust/api/app.dart';
+import 'package:kremote/src/rust/api/app.dart';
 import 'home_screen.dart';
 
 /// Shown at app startup when no vault exists yet (create flow) or when

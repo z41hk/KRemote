@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:remote_manager/src/rust/api/app.dart';
-import 'package:remote_manager/src/rust/api/models.dart';
+import 'package:kremote/src/rust/api/app.dart';
+import 'package:kremote/src/rust/api/models.dart';
 import 'vault_screen.dart';
 import 'connection_detail_screen.dart';
 

@@ -19,6 +19,8 @@ base64 = "0.22"
 thiserror = "1.0"
 anyhow = "1.0"
 uuid = { version = "1.11", features = ["v4", "serde"] }
+roxmltree = "0.20"
+url = "2.5"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }

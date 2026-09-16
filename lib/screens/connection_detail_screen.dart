@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:remote_manager/src/rust/api/app.dart';
-import 'package:remote_manager/src/rust/api/models.dart';
+import 'package:kremote/src/rust/api/app.dart';
+import 'package:kremote/src/rust/api/models.dart';
 
 /// Screen for adding a new connection or editing an existing one.
 class ConnectionDetailScreen extends StatefulWidget {
@@ -99,6 +99,8 @@ class _ConnectionDetailScreenState extends State<ConnectionDetailScreen> {
           username: _usernameController.text.isEmpty ? null : _usernameController.text,
           password: _passwordController.text.isEmpty ? null : _passwordController.text,
           privateKeyPath: _privateKeyController.text.isEmpty ? null : _privateKeyController.text,
+          folderId: null,
+          tags: [],
           path: path,
         );
       } else {
@@ -112,7 +114,7 @@ class _ConnectionDetailScreenState extends State<ConnectionDetailScreen> {
           username: _usernameController.text.isEmpty ? null : _usernameController.text,
           password: _passwordController.text.isEmpty ? null : _passwordController.text,
           privateKeyPath: _privateKeyController.text.isEmpty ? null : _privateKeyController.text,
-          folder: widget.connection!.folder,
+          folderId: widget.connection!.folderId,
           tags: widget.connection!.tags,
           notes: widget.connection!.notes,
         );

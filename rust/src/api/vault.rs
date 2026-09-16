@@ -8,12 +8,12 @@ use base64::{engine::general_purpose, Engine as _};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 
-use super::models::Connection;
+use super::models::{Connection, Folder};
 
 /// On-disk vault file format. `salt` and `password_hash` are stored
 /// unencrypted (as they must be, to verify the master password and derive
 /// the encryption key before anything else can be decrypted). The actual
-/// connection data lives in `encrypted_data`, which is AES-256-GCM
+/// connection/folder data lives in `encrypted_data`, which is AES-256-GCM
 /// encrypted with a key derived from the master password via Argon2id.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct VaultFile {
@@ -23,8 +23,18 @@ struct VaultFile {
     encrypted_data: String,
 }
 
+/// Plaintext payload that gets encrypted as a whole and stored in
+/// `VaultFile::encrypted_data`.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct VaultData {
+    #[serde(default)]
+    pub connections: Vec<Connection>,
+    #[serde(default)]
+    pub folders: Vec<Folder>,
+}
+
 struct VaultState {
-    connections: Vec<Connection>,
+    data: VaultData,
     salt: String,
     password_hash: String,
 }
@@ -57,7 +67,7 @@ impl Vault {
         let key = Self::derive_key(master_password, &salt_string)?;
 
         *self.state.lock().unwrap() = Some(VaultState {
-            connections: Vec::new(),
+            data: VaultData::default(),
             salt: salt_string,
             password_hash,
         });
@@ -77,11 +87,13 @@ impl Vault {
         self.master_key.lock().unwrap().is_some()
     }
 
+    // ---- Connections ----
+
     /// Add a connection to the in-memory vault.
     pub fn add_connection(&self, connection: Connection) -> Result<(), String> {
         let mut state = self.state.lock().unwrap();
         let state = state.as_mut().ok_or("Vault is locked")?;
-        state.connections.push(connection);
+        state.data.connections.push(connection);
         Ok(())
     }
 
@@ -89,7 +101,7 @@ impl Vault {
     pub fn get_connections(&self) -> Result<Vec<Connection>, String> {
         let state = self.state.lock().unwrap();
         let state = state.as_ref().ok_or("Vault is locked")?;
-        Ok(state.connections.clone())
+        Ok(state.data.connections.clone())
     }
 
     /// Get a specific connection by ID.
@@ -97,6 +109,7 @@ impl Vault {
         let state = self.state.lock().unwrap();
         let state = state.as_ref().ok_or("Vault is locked")?;
         state
+            .data
             .connections
             .iter()
             .find(|c| c.id == id)
@@ -109,8 +122,13 @@ impl Vault {
         let mut state = self.state.lock().unwrap();
         let state = state.as_mut().ok_or("Vault is locked")?;
 
-        if let Some(pos) = state.connections.iter().position(|c| c.id == connection.id) {
-            state.connections[pos] = connection;
+        if let Some(pos) = state
+            .data
+            .connections
+            .iter()
+            .position(|c| c.id == connection.id)
+        {
+            state.data.connections[pos] = connection;
             Ok(())
         } else {
             Err(format!("Connection not found: {}", connection.id))
@@ -122,13 +140,97 @@ impl Vault {
         let mut state = self.state.lock().unwrap();
         let state = state.as_mut().ok_or("Vault is locked")?;
 
-        if let Some(pos) = state.connections.iter().position(|c| c.id == id) {
-            state.connections.remove(pos);
+        if let Some(pos) = state.data.connections.iter().position(|c| c.id == id) {
+            state.data.connections.remove(pos);
             Ok(())
         } else {
             Err(format!("Connection not found: {}", id))
         }
     }
+
+    /// Replace all connections at once (used by import).
+    pub fn replace_connections(&self, connections: Vec<Connection>) -> Result<(), String> {
+        let mut state = self.state.lock().unwrap();
+        let state = state.as_mut().ok_or("Vault is locked")?;
+        state.data.connections = connections;
+        Ok(())
+    }
+
+    /// Add many connections at once, skipping duplicates by name+host+port
+    /// (used by import). Returns the number of connections actually added.
+    pub fn import_connections(&self, connections: Vec<Connection>) -> Result<usize, String> {
+        let mut state = self.state.lock().unwrap();
+        let state = state.as_mut().ok_or("Vault is locked")?;
+
+        let mut added = 0;
+        for mut conn in connections {
+            let is_duplicate = state.data.connections.iter().any(|existing| {
+                existing.name == conn.name
+                    && existing.host == conn.host
+                    && existing.port == conn.port
+            });
+            if is_duplicate {
+                continue;
+            }
+            // Always assign a fresh ID on import to avoid collisions.
+            conn.id = uuid::Uuid::new_v4().to_string();
+            state.data.connections.push(conn);
+            added += 1;
+        }
+        Ok(added)
+    }
+
+    // ---- Folders ----
+
+    /// Add a folder to the in-memory vault.
+    pub fn add_folder(&self, folder: Folder) -> Result<(), String> {
+        let mut state = self.state.lock().unwrap();
+        let state = state.as_mut().ok_or("Vault is locked")?;
+        state.data.folders.push(folder);
+        Ok(())
+    }
+
+    /// Get all folders.
+    pub fn get_folders(&self) -> Result<Vec<Folder>, String> {
+        let state = self.state.lock().unwrap();
+        let state = state.as_ref().ok_or("Vault is locked")?;
+        Ok(state.data.folders.clone())
+    }
+
+    /// Update an existing folder (e.g. rename).
+    pub fn update_folder(&self, folder: Folder) -> Result<(), String> {
+        let mut state = self.state.lock().unwrap();
+        let state = state.as_mut().ok_or("Vault is locked")?;
+
+        if let Some(pos) = state.data.folders.iter().position(|f| f.id == folder.id) {
+            state.data.folders[pos] = folder;
+            Ok(())
+        } else {
+            Err(format!("Folder not found: {}", folder.id))
+        }
+    }
+
+    /// Delete a folder by ID. Connections that referenced this folder are
+    /// moved back to the root (their `folder_id` is cleared) rather than
+    /// being deleted.
+    pub fn delete_folder(&self, id: &str) -> Result<(), String> {
+        let mut state = self.state.lock().unwrap();
+        let state = state.as_mut().ok_or("Vault is locked")?;
+
+        if let Some(pos) = state.data.folders.iter().position(|f| f.id == id) {
+            state.data.folders.remove(pos);
+            for conn in state.data.connections.iter_mut() {
+                if conn.folder_id.as_deref() == Some(id) {
+                    conn.folder_id = None;
+                }
+            }
+            Ok(())
+        } else {
+            Err(format!("Folder not found: {}", id))
+        }
+    }
+
+    // ---- Persistence ----
 
     /// Encrypt and persist the vault to disk.
     pub fn save_to_file(&self, path: &str) -> Result<(), String> {
@@ -137,8 +239,8 @@ impl Vault {
         let key = self.master_key.lock().unwrap();
         let key = key.as_ref().ok_or("Vault is locked")?;
 
-        let json = serde_json::to_string(&state.connections)
-            .map_err(|e| format!("Failed to serialize connections: {}", e))?;
+        let json = serde_json::to_string(&state.data)
+            .map_err(|e| format!("Failed to serialize vault data: {}", e))?;
 
         let encrypted_bytes = Self::encrypt_data(json.as_bytes(), key)?;
         let encrypted_data = general_purpose::STANDARD.encode(encrypted_bytes);
@@ -186,17 +288,27 @@ impl Vault {
 
         let decrypted = Self::decrypt_data(&encrypted_bytes, &key)?;
 
-        let connections: Vec<Connection> = serde_json::from_slice(&decrypted)
-            .map_err(|e| format!("Failed to parse connections: {}", e))?;
+        let data: VaultData = serde_json::from_slice(&decrypted)
+            .map_err(|e| format!("Failed to parse vault contents: {}", e))?;
 
         *self.state.lock().unwrap() = Some(VaultState {
-            connections,
+            data,
             salt: vault_file.salt,
             password_hash: vault_file.password_hash,
         });
         *self.master_key.lock().unwrap() = Some(key);
 
         Ok(())
+    }
+
+    /// Export the currently unlocked vault's connections and folders as a
+    /// plaintext JSON string. Callers are responsible for handling this
+    /// data securely (it contains credentials in cleartext once decoded).
+    pub fn export_json(&self) -> Result<String, String> {
+        let state = self.state.lock().unwrap();
+        let state = state.as_ref().ok_or("Vault is locked")?;
+        serde_json::to_string_pretty(&state.data)
+            .map_err(|e| format!("Failed to serialize export: {}", e))
     }
 
     fn derive_key(password: &str, salt: &str) -> Result<Vec<u8>, String> {

@@ -8,9 +8,11 @@ import 'models.dart';
 
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
+// These functions are ignored because they are not marked as `pub`: `authenticate`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `drop`
 
-/// Test SSH connection (standalone function for FFI)
+/// Test SSH connection (standalone function for FFI), optionally tunneled
+/// through a jump host.
 Future<String> testSshConnection({
   required String host,
   required int port,
@@ -27,8 +29,24 @@ Future<String> testSshConnection({
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SshConnection>>
 abstract class SshConnection implements RustOpaqueInterface {
-  /// Connect to SSH server
+  /// Connect directly to `connection`'s host:port and authenticate.
   Future<void> connect({required Connection connection});
+
+  /// Connect to `connection`'s host:port by first establishing an SSH
+  /// session to `jump_host`, then using SSH port forwarding to tunnel
+  /// a local connection through it. This is the standard "jump host" /
+  /// "bastion host" pattern.
+  ///
+  /// Note: This stores the jump session for later tunneling but doesn't
+  /// automatically create a forwarded connection yet. The real implementation
+  /// would need to set up local port forwarding and connect through that,
+  /// which requires more complex async channel handling than ssh2 supports
+  /// out of the box. For now, this is a placeholder that demonstrates the
+  /// authentication flow.
+  Future<void> connectViaJumpHost({
+    required Connection connection,
+    required Connection jumpHost,
+  });
 
   /// Disconnect
   Future<void> disconnect();

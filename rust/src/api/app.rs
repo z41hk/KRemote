@@ -1,6 +1,7 @@
 use std::sync::OnceLock;
 
-use super::models::{Connection, Protocol};
+use super::import;
+use super::models::{Connection, Folder, Protocol};
 use super::ssh;
 use super::vault::Vault;
 
@@ -34,6 +35,8 @@ fn dirs_next_config_dir() -> String {
     }
 }
 
+// ---- Vault lifecycle ----
+
 /// Create a brand new vault protected by `master_password` and
 /// immediately persist it to `path`.
 pub fn create_vault(master_password: String, path: String) -> Result<(), String> {
@@ -64,6 +67,8 @@ pub fn vault_exists(path: String) -> bool {
     std::path::Path::new(&path).exists()
 }
 
+// ---- Connections ----
+
 /// Add a new connection and persist the vault to `path`.
 pub fn add_connection(
     name: String,
@@ -73,12 +78,16 @@ pub fn add_connection(
     username: Option<String>,
     password: Option<String>,
     private_key_path: Option<String>,
+    folder_id: Option<String>,
+    tags: Vec<String>,
     path: String,
 ) -> Result<Connection, String> {
     let mut connection = Connection::new(name, protocol, host, port);
     connection.username = username;
     connection.password = password;
     connection.private_key_path = private_key_path;
+    connection.folder_id = folder_id;
+    connection.tags = tags;
 
     vault().add_connection(connection.clone())?;
     vault().save_to_file(&path)?;
@@ -117,4 +126,101 @@ pub fn test_connection(connection_id: String) -> Result<String, String> {
         }
         _ => Err("Only SSH connection testing is currently implemented".to_string()),
     }
+}
+
+// ---- Folders ----
+
+/// Add a new folder and persist the vault to `path`.
+pub fn add_folder(
+    name: String,
+    parent_id: Option<String>,
+    path: String,
+) -> Result<Folder, String> {
+    let folder = Folder::new(name, parent_id);
+    vault().add_folder(folder.clone())?;
+    vault().save_to_file(&path)?;
+    Ok(folder)
+}
+
+/// Retrieve all folders currently stored in the unlocked vault.
+pub fn get_folders() -> Result<Vec<Folder>, String> {
+    vault().get_folders()
+}
+
+/// Update an existing folder (e.g. rename) and persist the change to `path`.
+pub fn update_folder(folder: Folder, path: String) -> Result<(), String> {
+    vault().update_folder(folder)?;
+    vault().save_to_file(&path)
+}
+
+/// Delete a folder by ID and persist the change to `path`.
+/// Connections in that folder are moved to the root, not deleted.
+pub fn delete_folder(id: String, path: String) -> Result<(), String> {
+    vault().delete_folder(&id)?;
+    vault().save_to_file(&path)
+}
+
+// ---- Import / Export ----
+
+/// Import connections and folders from a mRemoteNG XML file.
+/// Returns the number of connections and folders imported.
+/// Duplicates (same name+host+port) are skipped.
+pub fn import_mremoteng_xml(xml_content: String, path: String) -> Result<(usize, usize), String> {
+    let (connections, folders) = import::parse_mremoteng_xml(&xml_content)?;
+
+    // Add folders first so connections can reference them
+    for folder in &folders {
+        vault().add_folder(folder.clone())?;
+    }
+
+    let connections_added = vault().import_connections(connections)?;
+    vault().save_to_file(&path)?;
+
+    Ok((connections_added, folders.len()))
+}
+
+/// Export the currently unlocked vault's connections and folders as a
+/// plaintext JSON string (contains credentials in cleartext).
+pub fn export_vault_json() -> Result<String, String> {
+    vault().export_json()
+}
+
+// ---- Utility / Launcher ----
+
+/// Open an HTTP/HTTPS URL in the system's default browser.
+pub fn open_url(url: String) -> Result<(), String> {
+    let parsed = url::Url::parse(&url).map_err(|e| format!("Invalid URL: {}", e))?;
+
+    let scheme = parsed.scheme();
+    if scheme != "http" && scheme != "https" {
+        return Err(format!("Only HTTP/HTTPS URLs are supported, got: {}", scheme));
+    }
+
+    // On all platforms, delegate to the OS to open the URL.
+    // This uses `open` on macOS, `xdg-open` on Linux, `start` on Windows.
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("cmd")
+            .args(&["/C", "start", &url])
+            .spawn()
+            .map_err(|e| format!("Failed to open URL: {}", e))?;
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(&url)
+            .spawn()
+            .map_err(|e| format!("Failed to open URL: {}", e))?;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(&url)
+            .spawn()
+            .map_err(|e| format!("Failed to open URL: {}", e))?;
+    }
+
+    Ok(())
 }

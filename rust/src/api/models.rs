@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum Protocol {
     Ssh,
     Rdp,
@@ -20,15 +20,16 @@ pub struct Connection {
     pub username: Option<String>,
     pub password: Option<String>,
     pub private_key_path: Option<String>,
-    pub folder: Option<String>,
+    pub folder_id: Option<String>,
     pub tags: Vec<String>,
     pub notes: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ConnectionFolder {
+pub struct Folder {
+    pub id: String,
     pub name: String,
-    pub parent: Option<String>,
+    pub parent_id: Option<String>,
 }
 
 impl Connection {
@@ -42,9 +43,19 @@ impl Connection {
             username: None,
             password: None,
             private_key_path: None,
-            folder: None,
+            folder_id: None,
             tags: Vec::new(),
             notes: None,
+        }
+    }
+}
+
+impl Folder {
+    pub fn new(name: String, parent_id: Option<String>) -> Self {
+        Self {
+            id: uuid::Uuid::new_v4().to_string(),
+            name,
+            parent_id,
         }
     }
 }

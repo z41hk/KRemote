@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:remote_manager/src/rust/frb_generated.dart';
+import 'package:kremote/src/rust/frb_generated.dart';
 import 'screens/home_screen.dart';
 
 Future<void> main() async {

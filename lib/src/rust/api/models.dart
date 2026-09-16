@@ -7,8 +7,7 @@ import '../frb_generated.dart';
 
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `ConnectionFolder`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `clone`, `clone`, `clone`, `eq`, `fmt`, `fmt`, `fmt`
 
 class Connection {
   final String id;
@@ -19,7 +18,7 @@ class Connection {
   final String? username;
   final String? password;
   final String? privateKeyPath;
-  final String? folder;
+  final String? folderId;
   final List<String> tags;
   final String? notes;
 
@@ -32,7 +31,7 @@ class Connection {
     this.username,
     this.password,
     this.privateKeyPath,
-    this.folder,
+    this.folderId,
     required this.tags,
     this.notes,
   });
@@ -60,7 +59,7 @@ class Connection {
       username.hashCode ^
       password.hashCode ^
       privateKeyPath.hashCode ^
-      folder.hashCode ^
+      folderId.hashCode ^
       tags.hashCode ^
       notes.hashCode;
 
@@ -77,9 +76,36 @@ class Connection {
           username == other.username &&
           password == other.password &&
           privateKeyPath == other.privateKeyPath &&
-          folder == other.folder &&
+          folderId == other.folderId &&
           tags == other.tags &&
           notes == other.notes;
+}
+
+class Folder {
+  final String id;
+  final String name;
+  final String? parentId;
+
+  const Folder({required this.id, required this.name, this.parentId});
+
+  // HINT: Make it `#[frb(sync)]` to let it become the default constructor of Dart class.
+  static Future<Folder> newInstance({required String name, String? parentId}) =>
+      RustLib.instance.api.crateApiModelsFolderNew(
+        name: name,
+        parentId: parentId,
+      );
+
+  @override
+  int get hashCode => id.hashCode ^ name.hashCode ^ parentId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Folder &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          name == other.name &&
+          parentId == other.parentId;
 }
 
 enum Protocol { ssh, rdp, vnc, http, https, vpn }

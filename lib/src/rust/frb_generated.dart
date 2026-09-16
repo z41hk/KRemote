@@ -4,10 +4,12 @@
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
 import 'api/app.dart';
+import 'api/import.dart';
 import 'api/models.dart';
 import 'api/simple.dart';
 import 'api/ssh.dart';
 import 'api/vault.dart';
+import 'api/vnc.dart';
 
 import 'dart:async';
 import 'dart:convert';
@@ -73,11 +75,11 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.13.0';
 
   @override
-  int get rustContentHash => -2017828654;
+  int get rustContentHash => -1823407332;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
-        stem: 'rust_lib_remote_manager',
+        stem: 'rust_lib_kremote',
         ioDirectory: 'rust/target/release/',
         webPrefix: 'pkg/',
         wasmBindgenName: 'wasm_bindgen',
@@ -88,6 +90,12 @@ abstract class RustLibApi extends BaseApi {
   Future<void> crateApiSshSshConnectionConnect({
     required SshConnection that,
     required Connection connection,
+  });
+
+  Future<void> crateApiSshSshConnectionConnectViaJumpHost({
+    required SshConnection that,
+    required Connection connection,
+    required Connection jumpHost,
   });
 
   Future<void> crateApiSshSshConnectionDisconnect({
@@ -110,6 +118,11 @@ abstract class RustLibApi extends BaseApi {
     required Connection connection,
   });
 
+  Future<void> crateApiVaultVaultAddFolder({
+    required Vault that,
+    required Folder folder,
+  });
+
   Future<void> crateApiVaultVaultCreate({
     required Vault that,
     required String masterPassword,
@@ -120,6 +133,13 @@ abstract class RustLibApi extends BaseApi {
     required String id,
   });
 
+  Future<void> crateApiVaultVaultDeleteFolder({
+    required Vault that,
+    required String id,
+  });
+
+  Future<String> crateApiVaultVaultExportJson({required Vault that});
+
   Future<Connection> crateApiVaultVaultGetConnection({
     required Vault that,
     required String id,
@@ -127,6 +147,13 @@ abstract class RustLibApi extends BaseApi {
 
   Future<List<Connection>> crateApiVaultVaultGetConnections({
     required Vault that,
+  });
+
+  Future<List<Folder>> crateApiVaultVaultGetFolders({required Vault that});
+
+  Future<BigInt> crateApiVaultVaultImportConnections({
+    required Vault that,
+    required List<Connection> connections,
   });
 
   Future<bool> crateApiVaultVaultIsUnlocked({required Vault that});
@@ -141,6 +168,11 @@ abstract class RustLibApi extends BaseApi {
 
   Future<Vault> crateApiVaultVaultNew();
 
+  Future<void> crateApiVaultVaultReplaceConnections({
+    required Vault that,
+    required List<Connection> connections,
+  });
+
   Future<void> crateApiVaultVaultSaveToFile({
     required Vault that,
     required String path,
@@ -151,6 +183,22 @@ abstract class RustLibApi extends BaseApi {
     required Connection connection,
   });
 
+  Future<void> crateApiVaultVaultUpdateFolder({
+    required Vault that,
+    required Folder folder,
+  });
+
+  Future<void> crateApiVncVncConnectionConnect({
+    required VncConnection that,
+    required Connection connection,
+  });
+
+  Future<void> crateApiVncVncConnectionDisconnect({
+    required VncConnection that,
+  });
+
+  Future<VncConnection> crateApiVncVncConnectionNew();
+
   Future<Connection> crateApiAppAddConnection({
     required String name,
     required Protocol protocol,
@@ -159,6 +207,14 @@ abstract class RustLibApi extends BaseApi {
     String? username,
     String? password,
     String? privateKeyPath,
+    String? folderId,
+    required List<String> tags,
+    required String path,
+  });
+
+  Future<Folder> crateApiAppAddFolder({
+    required String name,
+    String? parentId,
     required String path,
   });
 
@@ -181,15 +237,40 @@ abstract class RustLibApi extends BaseApi {
     required String path,
   });
 
+  Future<void> crateApiAppDeleteFolder({
+    required String id,
+    required String path,
+  });
+
+  Future<String> crateApiAppExportVaultJson();
+
+  Future<Folder> crateApiModelsFolderNew({
+    required String name,
+    String? parentId,
+  });
+
   Future<List<Connection>> crateApiAppGetConnections();
 
+  Future<List<Folder>> crateApiAppGetFolders();
+
   String crateApiSimpleGreet({required String name});
+
+  Future<(BigInt, BigInt)> crateApiAppImportMremotengXml({
+    required String xmlContent,
+    required String path,
+  });
 
   Future<void> crateApiSimpleInitApp();
 
   bool crateApiAppIsVaultUnlocked();
 
   void crateApiAppLockVault();
+
+  Future<void> crateApiAppOpenUrl({required String url});
+
+  Future<(List<Connection>, List<Folder>)> crateApiImportParseMremotengXml({
+    required String xmlContent,
+  });
 
   Future<String> crateApiAppTestConnection({required String connectionId});
 
@@ -201,6 +282,12 @@ abstract class RustLibApi extends BaseApi {
     String? privateKeyPath,
   });
 
+  Future<String> crateApiVncTestVncConnection({
+    required String host,
+    required int port,
+    String? password,
+  });
+
   Future<void> crateApiAppUnlockVault({
     required String masterPassword,
     required String path,
@@ -210,6 +297,13 @@ abstract class RustLibApi extends BaseApi {
     required Connection connection,
     required String path,
   });
+
+  Future<void> crateApiAppUpdateFolder({
+    required Folder folder,
+    required String path,
+  });
+
+  Future<VaultData> crateApiVaultVaultDataDefault();
 
   bool crateApiAppVaultExists({required String path});
 
@@ -227,6 +321,15 @@ abstract class RustLibApi extends BaseApi {
   RustArcDecrementStrongCountFnType get rust_arc_decrement_strong_count_Vault;
 
   CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_VaultPtr;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_VncConnection;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_VncConnection;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_VncConnectionPtr;
 }
 
 class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
@@ -276,6 +379,46 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<void> crateApiSshSshConnectionConnectViaJumpHost({
+    required SshConnection that,
+    required Connection connection,
+    required Connection jumpHost,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshConnection(
+            that,
+            serializer,
+          );
+          sse_encode_box_autoadd_connection(connection, serializer);
+          sse_encode_box_autoadd_connection(jumpHost, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 2,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiSshSshConnectionConnectViaJumpHostConstMeta,
+        argValues: [that, connection, jumpHost],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshConnectionConnectViaJumpHostConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshConnection_connect_via_jump_host",
+        argNames: ["that", "connection", "jumpHost"],
+      );
+
+  @override
   Future<void> crateApiSshSshConnectionDisconnect({
     required SshConnection that,
   }) {
@@ -290,7 +433,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 2,
+            funcId: 3,
             port: port_,
           );
         },
@@ -328,7 +471,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 3,
+            funcId: 4,
             port: port_,
           );
         },
@@ -358,7 +501,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 4,
+            funcId: 5,
             port: port_,
           );
         },
@@ -392,7 +535,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 5,
+            funcId: 6,
             port: port_,
           );
         },
@@ -430,7 +573,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 6,
+            funcId: 7,
             port: port_,
           );
         },
@@ -452,6 +595,44 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<void> crateApiVaultVaultAddFolder({
+    required Vault that,
+    required Folder folder,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVault(
+            that,
+            serializer,
+          );
+          sse_encode_box_autoadd_folder(folder, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 8,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiVaultVaultAddFolderConstMeta,
+        argValues: [that, folder],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiVaultVaultAddFolderConstMeta =>
+      const TaskConstMeta(
+        debugName: "Vault_add_folder",
+        argNames: ["that", "folder"],
+      );
+
+  @override
   Future<void> crateApiVaultVaultCreate({
     required Vault that,
     required String masterPassword,
@@ -468,7 +649,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 7,
+            funcId: 9,
             port: port_,
           );
         },
@@ -505,7 +686,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 8,
+            funcId: 10,
             port: port_,
           );
         },
@@ -527,6 +708,75 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<void> crateApiVaultVaultDeleteFolder({
+    required Vault that,
+    required String id,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVault(
+            that,
+            serializer,
+          );
+          sse_encode_String(id, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 11,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiVaultVaultDeleteFolderConstMeta,
+        argValues: [that, id],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiVaultVaultDeleteFolderConstMeta =>
+      const TaskConstMeta(
+        debugName: "Vault_delete_folder",
+        argNames: ["that", "id"],
+      );
+
+  @override
+  Future<String> crateApiVaultVaultExportJson({required Vault that}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVault(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 12,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiVaultVaultExportJsonConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiVaultVaultExportJsonConstMeta =>
+      const TaskConstMeta(debugName: "Vault_export_json", argNames: ["that"]);
+
+  @override
   Future<Connection> crateApiVaultVaultGetConnection({
     required Vault that,
     required String id,
@@ -543,7 +793,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 9,
+            funcId: 13,
             port: port_,
           );
         },
@@ -579,7 +829,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 10,
+            funcId: 14,
             port: port_,
           );
         },
@@ -601,6 +851,75 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<List<Folder>> crateApiVaultVaultGetFolders({required Vault that}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVault(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 15,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_folder,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiVaultVaultGetFoldersConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiVaultVaultGetFoldersConstMeta =>
+      const TaskConstMeta(debugName: "Vault_get_folders", argNames: ["that"]);
+
+  @override
+  Future<BigInt> crateApiVaultVaultImportConnections({
+    required Vault that,
+    required List<Connection> connections,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVault(
+            that,
+            serializer,
+          );
+          sse_encode_list_connection(connections, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 16,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_usize,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiVaultVaultImportConnectionsConstMeta,
+        argValues: [that, connections],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiVaultVaultImportConnectionsConstMeta =>
+      const TaskConstMeta(
+        debugName: "Vault_import_connections",
+        argNames: ["that", "connections"],
+      );
+
+  @override
   Future<bool> crateApiVaultVaultIsUnlocked({required Vault that}) {
     return handler.executeNormal(
       NormalTask(
@@ -613,7 +932,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 11,
+            funcId: 17,
             port: port_,
           );
         },
@@ -650,7 +969,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 12,
+            funcId: 18,
             port: port_,
           );
         },
@@ -684,7 +1003,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 13,
+            funcId: 19,
             port: port_,
           );
         },
@@ -711,7 +1030,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 14,
+            funcId: 20,
             port: port_,
           );
         },
@@ -731,6 +1050,44 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "Vault_new", argNames: []);
 
   @override
+  Future<void> crateApiVaultVaultReplaceConnections({
+    required Vault that,
+    required List<Connection> connections,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVault(
+            that,
+            serializer,
+          );
+          sse_encode_list_connection(connections, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 21,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiVaultVaultReplaceConnectionsConstMeta,
+        argValues: [that, connections],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiVaultVaultReplaceConnectionsConstMeta =>
+      const TaskConstMeta(
+        debugName: "Vault_replace_connections",
+        argNames: ["that", "connections"],
+      );
+
+  @override
   Future<void> crateApiVaultVaultSaveToFile({
     required Vault that,
     required String path,
@@ -747,7 +1104,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 15,
+            funcId: 22,
             port: port_,
           );
         },
@@ -785,7 +1142,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 16,
+            funcId: 23,
             port: port_,
           );
         },
@@ -807,6 +1164,146 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<void> crateApiVaultVaultUpdateFolder({
+    required Vault that,
+    required Folder folder,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVault(
+            that,
+            serializer,
+          );
+          sse_encode_box_autoadd_folder(folder, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 24,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiVaultVaultUpdateFolderConstMeta,
+        argValues: [that, folder],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiVaultVaultUpdateFolderConstMeta =>
+      const TaskConstMeta(
+        debugName: "Vault_update_folder",
+        argNames: ["that", "folder"],
+      );
+
+  @override
+  Future<void> crateApiVncVncConnectionConnect({
+    required VncConnection that,
+    required Connection connection,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVncConnection(
+            that,
+            serializer,
+          );
+          sse_encode_box_autoadd_connection(connection, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 25,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiVncVncConnectionConnectConstMeta,
+        argValues: [that, connection],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiVncVncConnectionConnectConstMeta =>
+      const TaskConstMeta(
+        debugName: "VncConnection_connect",
+        argNames: ["that", "connection"],
+      );
+
+  @override
+  Future<void> crateApiVncVncConnectionDisconnect({
+    required VncConnection that,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVncConnection(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 26,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiVncVncConnectionDisconnectConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiVncVncConnectionDisconnectConstMeta =>
+      const TaskConstMeta(
+        debugName: "VncConnection_disconnect",
+        argNames: ["that"],
+      );
+
+  @override
+  Future<VncConnection> crateApiVncVncConnectionNew() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 27,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVncConnection,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiVncVncConnectionNewConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiVncVncConnectionNewConstMeta =>
+      const TaskConstMeta(debugName: "VncConnection_new", argNames: []);
+
+  @override
   Future<Connection> crateApiAppAddConnection({
     required String name,
     required Protocol protocol,
@@ -815,6 +1312,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     String? username,
     String? password,
     String? privateKeyPath,
+    String? folderId,
+    required List<String> tags,
     required String path,
   }) {
     return handler.executeNormal(
@@ -828,11 +1327,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_opt_String(username, serializer);
           sse_encode_opt_String(password, serializer);
           sse_encode_opt_String(privateKeyPath, serializer);
+          sse_encode_opt_String(folderId, serializer);
+          sse_encode_list_String(tags, serializer);
           sse_encode_String(path, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 17,
+            funcId: 28,
             port: port_,
           );
         },
@@ -849,6 +1350,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           username,
           password,
           privateKeyPath,
+          folderId,
+          tags,
           path,
         ],
         apiImpl: this,
@@ -866,8 +1369,46 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       "username",
       "password",
       "privateKeyPath",
+      "folderId",
+      "tags",
       "path",
     ],
+  );
+
+  @override
+  Future<Folder> crateApiAppAddFolder({
+    required String name,
+    String? parentId,
+    required String path,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(name, serializer);
+          sse_encode_opt_String(parentId, serializer);
+          sse_encode_String(path, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 29,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_folder,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiAppAddFolderConstMeta,
+        argValues: [name, parentId, path],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiAppAddFolderConstMeta => const TaskConstMeta(
+    debugName: "add_folder",
+    argNames: ["name", "parentId", "path"],
   );
 
   @override
@@ -888,7 +1429,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 18,
+            funcId: 30,
             port: port_,
           );
         },
@@ -923,7 +1464,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 19,
+            funcId: 31,
             port: port_,
           );
         },
@@ -949,7 +1490,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       SyncTask(
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 20)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 32)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -979,7 +1520,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 21,
+            funcId: 33,
             port: port_,
           );
         },
@@ -1001,6 +1542,99 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<void> crateApiAppDeleteFolder({
+    required String id,
+    required String path,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(id, serializer);
+          sse_encode_String(path, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 34,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiAppDeleteFolderConstMeta,
+        argValues: [id, path],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiAppDeleteFolderConstMeta =>
+      const TaskConstMeta(debugName: "delete_folder", argNames: ["id", "path"]);
+
+  @override
+  Future<String> crateApiAppExportVaultJson() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 35,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiAppExportVaultJsonConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiAppExportVaultJsonConstMeta =>
+      const TaskConstMeta(debugName: "export_vault_json", argNames: []);
+
+  @override
+  Future<Folder> crateApiModelsFolderNew({
+    required String name,
+    String? parentId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(name, serializer);
+          sse_encode_opt_String(parentId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 36,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_folder,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiModelsFolderNewConstMeta,
+        argValues: [name, parentId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiModelsFolderNewConstMeta => const TaskConstMeta(
+    debugName: "folder_new",
+    argNames: ["name", "parentId"],
+  );
+
+  @override
   Future<List<Connection>> crateApiAppGetConnections() {
     return handler.executeNormal(
       NormalTask(
@@ -1009,7 +1643,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 22,
+            funcId: 37,
             port: port_,
           );
         },
@@ -1028,13 +1662,40 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "get_connections", argNames: []);
 
   @override
+  Future<List<Folder>> crateApiAppGetFolders() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 38,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_folder,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiAppGetFoldersConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiAppGetFoldersConstMeta =>
+      const TaskConstMeta(debugName: "get_folders", argNames: []);
+
+  @override
   String crateApiSimpleGreet({required String name}) {
     return handler.executeSync(
       SyncTask(
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(name, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 23)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 39)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -1051,6 +1712,41 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "greet", argNames: ["name"]);
 
   @override
+  Future<(BigInt, BigInt)> crateApiAppImportMremotengXml({
+    required String xmlContent,
+    required String path,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(xmlContent, serializer);
+          sse_encode_String(path, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 40,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_record_usize_usize,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiAppImportMremotengXmlConstMeta,
+        argValues: [xmlContent, path],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiAppImportMremotengXmlConstMeta =>
+      const TaskConstMeta(
+        debugName: "import_mremoteng_xml",
+        argNames: ["xmlContent", "path"],
+      );
+
+  @override
   Future<void> crateApiSimpleInitApp() {
     return handler.executeNormal(
       NormalTask(
@@ -1059,7 +1755,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 24,
+            funcId: 41,
             port: port_,
           );
         },
@@ -1083,7 +1779,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       SyncTask(
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 25)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 42)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_bool,
@@ -1105,7 +1801,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       SyncTask(
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 26)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 43)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
@@ -1122,6 +1818,67 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "lock_vault", argNames: []);
 
   @override
+  Future<void> crateApiAppOpenUrl({required String url}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(url, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 44,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiAppOpenUrlConstMeta,
+        argValues: [url],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiAppOpenUrlConstMeta =>
+      const TaskConstMeta(debugName: "open_url", argNames: ["url"]);
+
+  @override
+  Future<(List<Connection>, List<Folder>)> crateApiImportParseMremotengXml({
+    required String xmlContent,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(xmlContent, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 45,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_record_list_connection_list_folder,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiImportParseMremotengXmlConstMeta,
+        argValues: [xmlContent],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiImportParseMremotengXmlConstMeta =>
+      const TaskConstMeta(
+        debugName: "parse_mremoteng_xml",
+        argNames: ["xmlContent"],
+      );
+
+  @override
   Future<String> crateApiAppTestConnection({required String connectionId}) {
     return handler.executeNormal(
       NormalTask(
@@ -1131,7 +1888,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 27,
+            funcId: 46,
             port: port_,
           );
         },
@@ -1171,7 +1928,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 28,
+            funcId: 47,
             port: port_,
           );
         },
@@ -1193,6 +1950,43 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<String> crateApiVncTestVncConnection({
+    required String host,
+    required int port,
+    String? password,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(host, serializer);
+          sse_encode_u_16(port, serializer);
+          sse_encode_opt_String(password, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 48,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiVncTestVncConnectionConstMeta,
+        argValues: [host, port, password],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiVncTestVncConnectionConstMeta =>
+      const TaskConstMeta(
+        debugName: "test_vnc_connection",
+        argNames: ["host", "port", "password"],
+      );
+
+  @override
   Future<void> crateApiAppUnlockVault({
     required String masterPassword,
     required String path,
@@ -1206,7 +2000,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 29,
+            funcId: 49,
             port: port_,
           );
         },
@@ -1240,7 +2034,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 30,
+            funcId: 50,
             port: port_,
           );
         },
@@ -1262,13 +2056,74 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<void> crateApiAppUpdateFolder({
+    required Folder folder,
+    required String path,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_box_autoadd_folder(folder, serializer);
+          sse_encode_String(path, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 51,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiAppUpdateFolderConstMeta,
+        argValues: [folder, path],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiAppUpdateFolderConstMeta => const TaskConstMeta(
+    debugName: "update_folder",
+    argNames: ["folder", "path"],
+  );
+
+  @override
+  Future<VaultData> crateApiVaultVaultDataDefault() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 52,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_vault_data,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiVaultVaultDataDefaultConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiVaultVaultDataDefaultConstMeta =>
+      const TaskConstMeta(debugName: "vault_data_default", argNames: []);
+
+  @override
   bool crateApiAppVaultExists({required String path}) {
     return handler.executeSync(
       SyncTask(
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(path, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 31)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 53)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_bool,
@@ -1300,6 +2155,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   get rust_arc_decrement_strong_count_Vault => wire
       .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVault;
 
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_VncConnection => wire
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVncConnection;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_VncConnection => wire
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVncConnection;
+
   @protected
   SshConnection
   dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshConnection(
@@ -1319,12 +2182,30 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  VncConnection
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVncConnection(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return VncConnectionImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
   SshConnection
   dco_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshConnection(
     dynamic raw,
   ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return SshConnectionImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  VncConnection
+  dco_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVncConnection(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return VncConnectionImpl.frbInternalDcoDecode(raw as List<dynamic>);
   }
 
   @protected
@@ -1364,6 +2245,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  VncConnection
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVncConnection(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return VncConnectionImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
   String dco_decode_String(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as String;
@@ -1382,6 +2272,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  Folder dco_decode_box_autoadd_folder(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_folder(raw);
+  }
+
+  @protected
   Connection dco_decode_connection(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
@@ -1396,9 +2292,22 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       username: dco_decode_opt_String(arr[5]),
       password: dco_decode_opt_String(arr[6]),
       privateKeyPath: dco_decode_opt_String(arr[7]),
-      folder: dco_decode_opt_String(arr[8]),
+      folderId: dco_decode_opt_String(arr[8]),
       tags: dco_decode_list_String(arr[9]),
       notes: dco_decode_opt_String(arr[10]),
+    );
+  }
+
+  @protected
+  Folder dco_decode_folder(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return Folder(
+      id: dco_decode_String(arr[0]),
+      name: dco_decode_String(arr[1]),
+      parentId: dco_decode_opt_String(arr[2]),
     );
   }
 
@@ -1421,6 +2330,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<Folder> dco_decode_list_folder(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_folder).toList();
+  }
+
+  @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as Uint8List;
@@ -1436,6 +2351,27 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Protocol dco_decode_protocol(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return Protocol.values[raw as int];
+  }
+
+  @protected
+  (List<Connection>, List<Folder>)
+  dco_decode_record_list_connection_list_folder(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2) {
+      throw Exception('Expected 2 elements, got ${arr.length}');
+    }
+    return (dco_decode_list_connection(arr[0]), dco_decode_list_folder(arr[1]));
+  }
+
+  @protected
+  (BigInt, BigInt) dco_decode_record_usize_usize(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2) {
+      throw Exception('Expected 2 elements, got ${arr.length}');
+    }
+    return (dco_decode_usize(arr[0]), dco_decode_usize(arr[1]));
   }
 
   @protected
@@ -1463,6 +2399,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  VaultData dco_decode_vault_data(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return VaultData(
+      connections: dco_decode_list_connection(arr[0]),
+      folders: dco_decode_list_folder(arr[1]),
+    );
+  }
+
+  @protected
   SshConnection
   sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshConnection(
     SseDeserializer deserializer,
@@ -1487,12 +2435,36 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  VncConnection
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVncConnection(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return VncConnectionImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
   SshConnection
   sse_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshConnection(
     SseDeserializer deserializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return SshConnectionImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  VncConnection
+  sse_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVncConnection(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return VncConnectionImpl.frbInternalSseDecode(
       sse_decode_usize(deserializer),
       sse_decode_i_32(deserializer),
     );
@@ -1547,6 +2519,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  VncConnection
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVncConnection(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return VncConnectionImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
   String sse_decode_String(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var inner = sse_decode_list_prim_u_8_strict(deserializer);
@@ -1566,6 +2550,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  Folder sse_decode_box_autoadd_folder(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_folder(deserializer));
+  }
+
+  @protected
   Connection sse_decode_connection(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_id = sse_decode_String(deserializer);
@@ -1576,7 +2566,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_username = sse_decode_opt_String(deserializer);
     var var_password = sse_decode_opt_String(deserializer);
     var var_privateKeyPath = sse_decode_opt_String(deserializer);
-    var var_folder = sse_decode_opt_String(deserializer);
+    var var_folderId = sse_decode_opt_String(deserializer);
     var var_tags = sse_decode_list_String(deserializer);
     var var_notes = sse_decode_opt_String(deserializer);
     return Connection(
@@ -1588,10 +2578,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       username: var_username,
       password: var_password,
       privateKeyPath: var_privateKeyPath,
-      folder: var_folder,
+      folderId: var_folderId,
       tags: var_tags,
       notes: var_notes,
     );
+  }
+
+  @protected
+  Folder sse_decode_folder(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_id = sse_decode_String(deserializer);
+    var var_name = sse_decode_String(deserializer);
+    var var_parentId = sse_decode_opt_String(deserializer);
+    return Folder(id: var_id, name: var_name, parentId: var_parentId);
   }
 
   @protected
@@ -1625,6 +2624,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<Folder> sse_decode_list_folder(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <Folder>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_folder(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var len_ = sse_decode_i_32(deserializer);
@@ -1650,6 +2661,23 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  (List<Connection>, List<Folder>)
+  sse_decode_record_list_connection_list_folder(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_field0 = sse_decode_list_connection(deserializer);
+    var var_field1 = sse_decode_list_folder(deserializer);
+    return (var_field0, var_field1);
+  }
+
+  @protected
+  (BigInt, BigInt) sse_decode_record_usize_usize(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_field0 = sse_decode_usize(deserializer);
+    var var_field1 = sse_decode_usize(deserializer);
+    return (var_field0, var_field1);
+  }
+
+  @protected
   int sse_decode_u_16(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getUint16();
@@ -1670,6 +2698,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   BigInt sse_decode_usize(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getBigUint64();
+  }
+
+  @protected
+  VaultData sse_decode_vault_data(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_connections = sse_decode_list_connection(deserializer);
+    var var_folders = sse_decode_list_folder(deserializer);
+    return VaultData(connections: var_connections, folders: var_folders);
   }
 
   @protected
@@ -1700,6 +2736,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVncConnection(
+    VncConnection self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as VncConnectionImpl).frbInternalSseEncode(move: true),
+      serializer,
+    );
+  }
+
+  @protected
+  void
   sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshConnection(
     SshConnection self,
     SseSerializer serializer,
@@ -1707,6 +2756,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_usize(
       (self as SshConnectionImpl).frbInternalSseEncode(move: false),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVncConnection(
+    VncConnection self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as VncConnectionImpl).frbInternalSseEncode(move: false),
       serializer,
     );
   }
@@ -1764,6 +2826,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVncConnection(
+    VncConnection self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as VncConnectionImpl).frbInternalSseEncode(move: null),
+      serializer,
+    );
+  }
+
+  @protected
   void sse_encode_String(String self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_list_prim_u_8_strict(utf8.encoder.convert(self), serializer);
@@ -1785,6 +2860,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_box_autoadd_folder(Folder self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_folder(self, serializer);
+  }
+
+  @protected
   void sse_encode_connection(Connection self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(self.id, serializer);
@@ -1795,9 +2876,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_opt_String(self.username, serializer);
     sse_encode_opt_String(self.password, serializer);
     sse_encode_opt_String(self.privateKeyPath, serializer);
-    sse_encode_opt_String(self.folder, serializer);
+    sse_encode_opt_String(self.folderId, serializer);
     sse_encode_list_String(self.tags, serializer);
     sse_encode_opt_String(self.notes, serializer);
+  }
+
+  @protected
+  void sse_encode_folder(Folder self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.id, serializer);
+    sse_encode_String(self.name, serializer);
+    sse_encode_opt_String(self.parentId, serializer);
   }
 
   @protected
@@ -1828,6 +2917,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_list_folder(List<Folder> self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_folder(item, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_list_prim_u_8_strict(
     Uint8List self,
     SseSerializer serializer,
@@ -1854,6 +2952,26 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_record_list_connection_list_folder(
+    (List<Connection>, List<Folder>) self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_list_connection(self.$1, serializer);
+    sse_encode_list_folder(self.$2, serializer);
+  }
+
+  @protected
+  void sse_encode_record_usize_usize(
+    (BigInt, BigInt) self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(self.$1, serializer);
+    sse_encode_usize(self.$2, serializer);
+  }
+
+  @protected
   void sse_encode_u_16(int self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putUint16(self);
@@ -1874,6 +2992,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   void sse_encode_usize(BigInt self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putBigUint64(self);
+  }
+
+  @protected
+  void sse_encode_vault_data(VaultData self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_list_connection(self.connections, serializer);
+    sse_encode_list_folder(self.folders, serializer);
   }
 }
 
@@ -1896,9 +3021,29 @@ class SshConnectionImpl extends RustOpaque implements SshConnection {
         RustLib.instance.api.rust_arc_decrement_strong_count_SshConnectionPtr,
   );
 
-  /// Connect to SSH server
+  /// Connect directly to `connection`'s host:port and authenticate.
   Future<void> connect({required Connection connection}) => RustLib.instance.api
       .crateApiSshSshConnectionConnect(that: this, connection: connection);
+
+  /// Connect to `connection`'s host:port by first establishing an SSH
+  /// session to `jump_host`, then using SSH port forwarding to tunnel
+  /// a local connection through it. This is the standard "jump host" /
+  /// "bastion host" pattern.
+  ///
+  /// Note: This stores the jump session for later tunneling but doesn't
+  /// automatically create a forwarded connection yet. The real implementation
+  /// would need to set up local port forwarding and connect through that,
+  /// which requires more complex async channel handling than ssh2 supports
+  /// out of the box. For now, this is a placeholder that demonstrates the
+  /// authentication flow.
+  Future<void> connectViaJumpHost({
+    required Connection connection,
+    required Connection jumpHost,
+  }) => RustLib.instance.api.crateApiSshSshConnectionConnectViaJumpHost(
+    that: this,
+    connection: connection,
+    jumpHost: jumpHost,
+  );
 
   /// Disconnect
   Future<void> disconnect() =>
@@ -1940,6 +3085,10 @@ class VaultImpl extends RustOpaque implements Vault {
       .api
       .crateApiVaultVaultAddConnection(that: this, connection: connection);
 
+  /// Add a folder to the in-memory vault.
+  Future<void> addFolder({required Folder folder}) => RustLib.instance.api
+      .crateApiVaultVaultAddFolder(that: this, folder: folder);
+
   /// Create a brand new, empty vault protected by `master_password`.
   /// Does not write to disk - call `save_to_file` afterwards.
   Future<void> create({required String masterPassword}) => RustLib.instance.api
@@ -1949,6 +3098,18 @@ class VaultImpl extends RustOpaque implements Vault {
   Future<void> deleteConnection({required String id}) => RustLib.instance.api
       .crateApiVaultVaultDeleteConnection(that: this, id: id);
 
+  /// Delete a folder by ID. Connections that referenced this folder are
+  /// moved back to the root (their `folder_id` is cleared) rather than
+  /// being deleted.
+  Future<void> deleteFolder({required String id}) =>
+      RustLib.instance.api.crateApiVaultVaultDeleteFolder(that: this, id: id);
+
+  /// Export the currently unlocked vault's connections and folders as a
+  /// plaintext JSON string. Callers are responsible for handling this
+  /// data securely (it contains credentials in cleartext once decoded).
+  Future<String> exportJson() =>
+      RustLib.instance.api.crateApiVaultVaultExportJson(that: this);
+
   /// Get a specific connection by ID.
   Future<Connection> getConnection({required String id}) =>
       RustLib.instance.api.crateApiVaultVaultGetConnection(that: this, id: id);
@@ -1956,6 +3117,18 @@ class VaultImpl extends RustOpaque implements Vault {
   /// Get all connections.
   Future<List<Connection>> getConnections() =>
       RustLib.instance.api.crateApiVaultVaultGetConnections(that: this);
+
+  /// Get all folders.
+  Future<List<Folder>> getFolders() =>
+      RustLib.instance.api.crateApiVaultVaultGetFolders(that: this);
+
+  /// Add many connections at once, skipping duplicates by name+host+port
+  /// (used by import). Returns the number of connections actually added.
+  Future<BigInt> importConnections({required List<Connection> connections}) =>
+      RustLib.instance.api.crateApiVaultVaultImportConnections(
+        that: this,
+        connections: connections,
+      );
 
   /// Check if vault is currently unlocked and usable.
   Future<bool> isUnlocked() =>
@@ -1976,6 +3149,13 @@ class VaultImpl extends RustOpaque implements Vault {
   Future<void> lock() =>
       RustLib.instance.api.crateApiVaultVaultLock(that: this);
 
+  /// Replace all connections at once (used by import).
+  Future<void> replaceConnections({required List<Connection> connections}) =>
+      RustLib.instance.api.crateApiVaultVaultReplaceConnections(
+        that: this,
+        connections: connections,
+      );
+
   /// Encrypt and persist the vault to disk.
   Future<void> saveToFile({required String path}) =>
       RustLib.instance.api.crateApiVaultVaultSaveToFile(that: this, path: path);
@@ -1985,4 +3165,34 @@ class VaultImpl extends RustOpaque implements Vault {
       .instance
       .api
       .crateApiVaultVaultUpdateConnection(that: this, connection: connection);
+
+  /// Update an existing folder (e.g. rename).
+  Future<void> updateFolder({required Folder folder}) => RustLib.instance.api
+      .crateApiVaultVaultUpdateFolder(that: this, folder: folder);
+}
+
+@sealed
+class VncConnectionImpl extends RustOpaque implements VncConnection {
+  // Not to be used by end users
+  VncConnectionImpl.frbInternalDcoDecode(List<dynamic> wire)
+    : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  VncConnectionImpl.frbInternalSseDecode(BigInt ptr, int externalSizeOnNative)
+    : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib.instance.api.rust_arc_increment_strong_count_VncConnection,
+    rustArcDecrementStrongCount:
+        RustLib.instance.api.rust_arc_decrement_strong_count_VncConnection,
+    rustArcDecrementStrongCountPtr:
+        RustLib.instance.api.rust_arc_decrement_strong_count_VncConnectionPtr,
+  );
+
+  Future<void> connect({required Connection connection}) => RustLib.instance.api
+      .crateApiVncVncConnectionConnect(that: this, connection: connection);
+
+  Future<void> disconnect() =>
+      RustLib.instance.api.crateApiVncVncConnectionDisconnect(that: this);
 }

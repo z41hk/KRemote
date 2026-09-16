@@ -52,6 +52,8 @@ Future<Connection> addConnection({
   String? username,
   String? password,
   String? privateKeyPath,
+  String? folderId,
+  required List<String> tags,
   required String path,
 }) => RustLib.instance.api.crateApiAppAddConnection(
   name: name,
@@ -61,6 +63,8 @@ Future<Connection> addConnection({
   username: username,
   password: password,
   privateKeyPath: privateKeyPath,
+  folderId: folderId,
+  tags: tags,
   path: path,
 );
 
@@ -86,3 +90,47 @@ Future<void> updateConnection({
 /// a human-readable success message or an error describing what failed.
 Future<String> testConnection({required String connectionId}) =>
     RustLib.instance.api.crateApiAppTestConnection(connectionId: connectionId);
+
+/// Add a new folder and persist the vault to `path`.
+Future<Folder> addFolder({
+  required String name,
+  String? parentId,
+  required String path,
+}) => RustLib.instance.api.crateApiAppAddFolder(
+  name: name,
+  parentId: parentId,
+  path: path,
+);
+
+/// Retrieve all folders currently stored in the unlocked vault.
+Future<List<Folder>> getFolders() =>
+    RustLib.instance.api.crateApiAppGetFolders();
+
+/// Update an existing folder (e.g. rename) and persist the change to `path`.
+Future<void> updateFolder({required Folder folder, required String path}) =>
+    RustLib.instance.api.crateApiAppUpdateFolder(folder: folder, path: path);
+
+/// Delete a folder by ID and persist the change to `path`.
+/// Connections in that folder are moved to the root, not deleted.
+Future<void> deleteFolder({required String id, required String path}) =>
+    RustLib.instance.api.crateApiAppDeleteFolder(id: id, path: path);
+
+/// Import connections and folders from a mRemoteNG XML file.
+/// Returns the number of connections and folders imported.
+/// Duplicates (same name+host+port) are skipped.
+Future<(BigInt, BigInt)> importMremotengXml({
+  required String xmlContent,
+  required String path,
+}) => RustLib.instance.api.crateApiAppImportMremotengXml(
+  xmlContent: xmlContent,
+  path: path,
+);
+
+/// Export the currently unlocked vault's connections and folders as a
+/// plaintext JSON string (contains credentials in cleartext).
+Future<String> exportVaultJson() =>
+    RustLib.instance.api.crateApiAppExportVaultJson();
+
+/// Open an HTTP/HTTPS URL in the system's default browser.
+Future<void> openUrl({required String url}) =>
+    RustLib.instance.api.crateApiAppOpenUrl(url: url);

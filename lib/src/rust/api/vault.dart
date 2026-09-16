@@ -10,12 +10,15 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // These functions are ignored because they are not marked as `pub`: `decrypt_data`, `derive_key`, `encrypt_data`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `VaultFile`, `VaultState`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `fmt`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `fmt`, `fmt`
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Vault>>
 abstract class Vault implements RustOpaqueInterface {
   /// Add a connection to the in-memory vault.
   Future<void> addConnection({required Connection connection});
+
+  /// Add a folder to the in-memory vault.
+  Future<void> addFolder({required Folder folder});
 
   /// Create a brand new, empty vault protected by `master_password`.
   /// Does not write to disk - call `save_to_file` afterwards.
@@ -24,11 +27,28 @@ abstract class Vault implements RustOpaqueInterface {
   /// Delete a connection by ID.
   Future<void> deleteConnection({required String id});
 
+  /// Delete a folder by ID. Connections that referenced this folder are
+  /// moved back to the root (their `folder_id` is cleared) rather than
+  /// being deleted.
+  Future<void> deleteFolder({required String id});
+
+  /// Export the currently unlocked vault's connections and folders as a
+  /// plaintext JSON string. Callers are responsible for handling this
+  /// data securely (it contains credentials in cleartext once decoded).
+  Future<String> exportJson();
+
   /// Get a specific connection by ID.
   Future<Connection> getConnection({required String id});
 
   /// Get all connections.
   Future<List<Connection>> getConnections();
+
+  /// Get all folders.
+  Future<List<Folder>> getFolders();
+
+  /// Add many connections at once, skipping duplicates by name+host+port
+  /// (used by import). Returns the number of connections actually added.
+  Future<BigInt> importConnections({required List<Connection> connections});
 
   /// Check if vault is currently unlocked and usable.
   Future<bool> isUnlocked();
@@ -47,9 +67,38 @@ abstract class Vault implements RustOpaqueInterface {
   static Future<Vault> newInstance() =>
       RustLib.instance.api.crateApiVaultVaultNew();
 
+  /// Replace all connections at once (used by import).
+  Future<void> replaceConnections({required List<Connection> connections});
+
   /// Encrypt and persist the vault to disk.
   Future<void> saveToFile({required String path});
 
   /// Update an existing connection.
   Future<void> updateConnection({required Connection connection});
+
+  /// Update an existing folder (e.g. rename).
+  Future<void> updateFolder({required Folder folder});
+}
+
+/// Plaintext payload that gets encrypted as a whole and stored in
+/// `VaultFile::encrypted_data`.
+class VaultData {
+  final List<Connection> connections;
+  final List<Folder> folders;
+
+  const VaultData({required this.connections, required this.folders});
+
+  static Future<VaultData> default_() =>
+      RustLib.instance.api.crateApiVaultVaultDataDefault();
+
+  @override
+  int get hashCode => connections.hashCode ^ folders.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is VaultData &&
+          runtimeType == other.runtimeType &&
+          connections == other.connections &&
+          folders == other.folders;
 }
