@@ -2,6 +2,45 @@
 
 An open-source, cross-platform remote connection manager inspired by mRemoteNG but built from the ground up to work on Windows, Linux, macOS, iOS, and Android.
 
+## Screenshots
+
+<div align="center">
+  <img src="screenshots/04-home-with-connections.png" alt="Connection Manager" width="800"/>
+  <p><em>Manage all your remote connections in one place</em></p>
+</div>
+
+<details>
+<summary>More screenshots</summary>
+
+### Vault Creation
+<img src="screenshots/01-vault-creation.png" alt="Vault Creation" width="800"/>
+
+### Empty Home Screen
+<img src="screenshots/02-home-empty.png" alt="Empty Home Screen" width="800"/>
+
+### Add Connection
+<img src="screenshots/03-add-connection.png" alt="Add Connection" width="800"/>
+
+### Home with Connections
+<img src="screenshots/04-home-with-connections.png" alt="Home with Connections" width="800"/>
+
+### Connection Details
+<img src="screenshots/05-connection-detail.png" alt="Connection Details" width="800"/>
+
+### After Logout (Vault Locked)
+<img src="screenshots/06-after-logout.png" alt="After Logout" width="800"/>
+
+</details>
+
+## Download
+
+Pre-built binaries are available on the [Releases page](https://github.com/z41hk/KRemote/releases).
+
+**Latest: v0.1.0-alpha (Windows x64)**
+- Download `KRemote-v0.1.0-alpha-windows-x64.zip`, extract, and run `kremote.exe`
+- No installation required (portable)
+- This is an early alpha — expect rough edges and breaking changes between releases
+
 ## Project Vision
 
 A unified connection manager supporting multiple protocols:
