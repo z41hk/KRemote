@@ -29,6 +29,9 @@ Future<String> testSshConnection({
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SshConnection>>
 abstract class SshConnection implements RustOpaqueInterface {
+  /// Close the interactive shell.
+  Future<void> closeShell();
+
   /// Connect directly to `connection`'s host:port and authenticate.
   Future<void> connect({required Connection connection});
 
@@ -57,6 +60,24 @@ abstract class SshConnection implements RustOpaqueInterface {
   // HINT: Make it `#[frb(sync)]` to let it become the default constructor of Dart class.
   static Future<SshConnection> newInstance() =>
       RustLib.instance.api.crateApiSshSshConnectionNew();
+
+  /// Open an interactive shell (PTY) and start streaming output to Flutter.
+  /// This spawns a background thread that continuously reads from the channel
+  /// and sends data chunks via the `output_sink`.
+  ///
+  /// Call `send_input` to write data to the shell, and `resize_pty` to update
+  /// terminal dimensions.
+  Stream<Uint8List> openShell({
+    required String termType,
+    required int cols,
+    required int rows,
+  });
+
+  /// Resize the PTY when terminal window size changes.
+  Future<void> resizePty({required int cols, required int rows});
+
+  /// Send input (keystrokes) to the interactive shell.
+  Future<void> sendInput({required List<int> data});
 
   /// Test connection
   Future<String> testConnection();

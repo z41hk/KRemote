@@ -1,8 +1,11 @@
-use ssh2::Session;
-use std::io::Read;
+use ssh2::{Channel, Session};
+use std::io::{Read, Write};
 use std::net::TcpStream;
+use std::sync::{Arc, Mutex};
+use std::thread;
 
 use super::models::Connection;
+use crate::frb_generated::StreamSink;
 
 #[flutter_rust_bridge::frb(opaque)]
 pub struct SshConnection {
@@ -10,6 +13,11 @@ pub struct SshConnection {
     /// Kept alive so the tunneled TCP connection through the jump host
     /// isn't dropped while `session` (the target session) is in use.
     _jump_session: Option<Session>,
+    /// Interactive shell channel, once opened via `open_shell`.
+    /// `Channel` is `Clone` and internally `Arc<Mutex<..>>`-guarded, so we
+    /// can hand out clones to a background reader thread while keeping one
+    /// here for writing input / resizing / closing.
+    shell_channel: Arc<Mutex<Option<Channel>>>,
 }
 
 impl SshConnection {
@@ -17,6 +25,7 @@ impl SshConnection {
         Self {
             session: None,
             _jump_session: None,
+            shell_channel: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -162,6 +171,14 @@ impl SshConnection {
 
     /// Disconnect
     pub fn disconnect(&mut self) -> Result<(), String> {
+        // Close shell channel first if open
+        if let Ok(mut guard) = self.shell_channel.lock() {
+            if let Some(mut channel) = guard.take() {
+                let _ = channel.close();
+                let _ = channel.wait_close();
+            }
+        }
+        
         if let Some(session) = self.session.take() {
             session
                 .disconnect(None, "Goodbye", None)
@@ -169,6 +186,105 @@ impl SshConnection {
         }
         if let Some(jump_session) = self._jump_session.take() {
             let _ = jump_session.disconnect(None, "Goodbye", None);
+        }
+        Ok(())
+    }
+
+    /// Open an interactive shell (PTY) and start streaming output to Flutter.
+    /// This spawns a background thread that continuously reads from the channel
+    /// and sends data chunks via the `output_sink`.
+    ///
+    /// Call `send_input` to write data to the shell, and `resize_pty` to update
+    /// terminal dimensions.
+    pub fn open_shell(
+        &self,
+        term_type: String,
+        cols: u32,
+        rows: u32,
+        output_sink: StreamSink<Vec<u8>>,
+    ) -> Result<(), String> {
+        let session = self.session.as_ref().ok_or("Not connected")?;
+
+        // Request a PTY and start the shell
+        let mut channel = session
+            .channel_session()
+            .map_err(|e| format!("Failed to open channel: {}", e))?;
+
+        channel
+            .request_pty(&term_type, None, Some((cols, rows, 0, 0)))
+            .map_err(|e| format!("Failed to request PTY: {}", e))?;
+
+        channel
+            .shell()
+            .map_err(|e| format!("Failed to start shell: {}", e))?;
+
+        // Store the channel for later write/resize/close operations
+        {
+            let mut guard = self.shell_channel.lock().unwrap();
+            *guard = Some(channel.clone());
+        }
+
+        // Spawn a background thread to continuously read output and stream to Flutter
+        thread::spawn(move || {
+            let mut buf = [0u8; 4096];
+            loop {
+                match channel.read(&mut buf) {
+                    Ok(0) => {
+                        // EOF reached
+                        break;
+                    }
+                    Ok(n) => {
+                        let data = buf[..n].to_vec();
+                        if output_sink.add(data).is_err() {
+                            // Flutter side closed the stream
+                            break;
+                        }
+                    }
+                    Err(e) => {
+                        // Read error (connection dropped, etc.)
+                        eprintln!("SSH shell read error: {}", e);
+                        break;
+                    }
+                }
+            }
+            // Stream will be automatically closed when output_sink is dropped
+        });
+
+        Ok(())
+    }
+
+    /// Send input (keystrokes) to the interactive shell.
+    pub fn send_input(&self, data: Vec<u8>) -> Result<(), String> {
+        let guard = self.shell_channel.lock().unwrap();
+        let channel = guard.as_ref().ok_or("Shell not opened")?;
+
+        let mut ch = channel.clone();
+        ch.write_all(&data)
+            .map_err(|e| format!("Failed to write to shell: {}", e))?;
+        ch.flush()
+            .map_err(|e| format!("Failed to flush shell: {}", e))?;
+
+        Ok(())
+    }
+
+    /// Resize the PTY when terminal window size changes.
+    pub fn resize_pty(&self, cols: u32, rows: u32) -> Result<(), String> {
+        let guard = self.shell_channel.lock().unwrap();
+        let channel = guard.as_ref().ok_or("Shell not opened")?;
+
+        let mut ch = channel.clone();
+        ch.request_pty_size(cols, rows, None, None)
+            .map_err(|e| format!("Failed to resize PTY: {}", e))?;
+
+        Ok(())
+    }
+
+    /// Close the interactive shell.
+    pub fn close_shell(&self) -> Result<(), String> {
+        let mut guard = self.shell_channel.lock().unwrap();
+        if let Some(mut channel) = guard.take() {
+            channel.close().map_err(|e| format!("Failed to close channel: {}", e))?;
+            channel.wait_close().map_err(|e| format!("Failed to wait for close: {}", e))?;
         }
         Ok(())
     }
