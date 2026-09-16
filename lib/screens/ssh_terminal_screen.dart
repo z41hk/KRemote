@@ -155,6 +155,8 @@ class _SshTerminalScreenState extends State<SshTerminalScreen> {
         ),
         autofocus: true,
         backgroundOpacity: 1.0,
+        hardwareKeyboardOnly: false,
+        readOnly: false,
       ),
     );
   }
