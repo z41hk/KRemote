@@ -20,10 +20,15 @@ class _ConnectionDetailScreenState extends State<ConnectionDetailScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _privateKeyController = TextEditingController();
+  final _tagInputController = TextEditingController();
 
   Protocol _selectedProtocol = Protocol.ssh;
   bool _obscurePassword = true;
   bool _isSubmitting = false;
+  String? _selectedFolderId;
+  List<String> _tags = [];
+  List<Folder> _folders = [];
+  bool _isLoadingFolders = true;
 
   @override
   void initState() {
@@ -37,9 +42,37 @@ class _ConnectionDetailScreenState extends State<ConnectionDetailScreen> {
       _passwordController.text = conn.password ?? '';
       _privateKeyController.text = conn.privateKeyPath ?? '';
       _selectedProtocol = conn.protocol;
+      _selectedFolderId = conn.folderId;
+      _tags = List<String>.from(conn.tags);
     } else {
       _portController.text = '22'; // default SSH port
     }
+    _loadFolders();
+  }
+
+  Future<void> _loadFolders() async {
+    try {
+      final folders = await getFolders();
+      setState(() {
+        _folders = folders;
+        _isLoadingFolders = false;
+      });
+    } catch (e) {
+      setState(() => _isLoadingFolders = false);
+    }
+  }
+
+  void _addTag(String rawTag) {
+    final tag = rawTag.trim();
+    if (tag.isEmpty || _tags.contains(tag)) return;
+    setState(() {
+      _tags.add(tag);
+      _tagInputController.clear();
+    });
+  }
+
+  void _removeTag(String tag) {
+    setState(() => _tags.remove(tag));
   }
 
   @override
@@ -50,6 +83,7 @@ class _ConnectionDetailScreenState extends State<ConnectionDetailScreen> {
     _usernameController.dispose();
     _passwordController.dispose();
     _privateKeyController.dispose();
+    _tagInputController.dispose();
     super.dispose();
   }
 
@@ -99,8 +133,8 @@ class _ConnectionDetailScreenState extends State<ConnectionDetailScreen> {
           username: _usernameController.text.isEmpty ? null : _usernameController.text,
           password: _passwordController.text.isEmpty ? null : _passwordController.text,
           privateKeyPath: _privateKeyController.text.isEmpty ? null : _privateKeyController.text,
-          folderId: null,
-          tags: [],
+          folderId: _selectedFolderId,
+          tags: _tags,
           path: path,
         );
       } else {
@@ -114,8 +148,8 @@ class _ConnectionDetailScreenState extends State<ConnectionDetailScreen> {
           username: _usernameController.text.isEmpty ? null : _usernameController.text,
           password: _passwordController.text.isEmpty ? null : _passwordController.text,
           privateKeyPath: _privateKeyController.text.isEmpty ? null : _privateKeyController.text,
-          folderId: widget.connection!.folderId,
-          tags: widget.connection!.tags,
+          folderId: _selectedFolderId,
+          tags: _tags,
           notes: widget.connection!.notes,
         );
         await updateConnection(connection: updated, path: path);
@@ -267,6 +301,70 @@ class _ConnectionDetailScreenState extends State<ConnectionDetailScreen> {
                   prefixIcon: const Icon(Icons.vpn_key_outlined),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 ),
+              ),
+            ],
+            const SizedBox(height: 24),
+            Text(
+              'Organization',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.white.withValues(alpha: 0.5),
+              ),
+            ),
+            const SizedBox(height: 12),
+            if (_isLoadingFolders)
+              const Center(child: CircularProgressIndicator())
+            else
+              DropdownButtonFormField<String?>(
+                initialValue: _selectedFolderId,
+                dropdownColor: const Color(0xFF1E293B),
+                style: const TextStyle(color: Color(0xFFF8FAFC)),
+                decoration: InputDecoration(
+                  labelText: 'Folder (Optional)',
+                  prefixIcon: const Icon(Icons.folder_outlined),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                items: [
+                  const DropdownMenuItem<String?>(
+                    value: null,
+                    child: Text('None (Root Level)'),
+                  ),
+                  ..._folders.map((folder) => DropdownMenuItem<String?>(
+                    value: folder.id,
+                    child: Text(folder.name),
+                  )),
+                ],
+                onChanged: (value) => setState(() => _selectedFolderId = value),
+              ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _tagInputController,
+              style: const TextStyle(color: Color(0xFFF8FAFC)),
+              decoration: InputDecoration(
+                labelText: 'Add Tags',
+                hintText: 'Press Enter to add',
+                prefixIcon: const Icon(Icons.label_outline),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onSubmitted: _addTag,
+            ),
+            if (_tags.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _tags.map((tag) => Chip(
+                  label: Text(tag, style: const TextStyle(fontSize: 12)),
+                  deleteIcon: const Icon(Icons.close, size: 16),
+                  onDeleted: () => _removeTag(tag),
+                  backgroundColor: const Color(0xFF4FD1C5).withValues(alpha: 0.2),
+                  side: BorderSide(
+                    color: const Color(0xFF4FD1C5).withValues(alpha: 0.4),
+                  ),
+                  labelStyle: const TextStyle(color: Color(0xFF4FD1C5)),
+                  deleteIconColor: const Color(0xFF4FD1C5),
+                )).toList(),
               ),
             ],
           ],
