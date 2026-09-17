@@ -1836,6 +1836,7 @@ fn wire__crate__api__app__add_connection_impl(
             let api_tags = <Vec<String>>::sse_decode(&mut deserializer);
             let api_path = <String>::sse_decode(&mut deserializer);
             let api_jump_host_id = <Option<String>>::sse_decode(&mut deserializer);
+            let api_timeout_seconds = <u64>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, String>((move || {
@@ -1851,6 +1852,7 @@ fn wire__crate__api__app__add_connection_impl(
                         api_tags,
                         api_path,
                         api_jump_host_id,
+                        api_timeout_seconds,
                     )?;
                     std::result::Result::Ok(output_ok)
                 })())
@@ -2978,6 +2980,7 @@ impl SseDecode for crate::api::models::Connection {
         let mut var_tags = <Vec<String>>::sse_decode(deserializer);
         let mut var_notes = <Option<String>>::sse_decode(deserializer);
         let mut var_jumpHostId = <Option<String>>::sse_decode(deserializer);
+        let mut var_timeoutSeconds = <u64>::sse_decode(deserializer);
         return crate::api::models::Connection {
             id: var_id,
             name: var_name,
@@ -2992,6 +2995,7 @@ impl SseDecode for crate::api::models::Connection {
             tags: var_tags,
             notes: var_notes,
             jump_host_id: var_jumpHostId,
+            timeout_seconds: var_timeoutSeconds,
         };
     }
 }
@@ -3126,6 +3130,13 @@ impl SseDecode for u32 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         deserializer.cursor.read_u32::<NativeEndian>().unwrap()
+    }
+}
+
+impl SseDecode for u64 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        deserializer.cursor.read_u64::<NativeEndian>().unwrap()
     }
 }
 
@@ -3395,6 +3406,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::models::Connection {
             self.tags.into_into_dart().into_dart(),
             self.notes.into_into_dart().into_dart(),
             self.jump_host_id.into_into_dart().into_dart(),
+            self.timeout_seconds.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -3567,6 +3579,7 @@ impl SseEncode for crate::api::models::Connection {
         <Vec<String>>::sse_encode(self.tags, serializer);
         <Option<String>>::sse_encode(self.notes, serializer);
         <Option<String>>::sse_encode(self.jump_host_id, serializer);
+        <u64>::sse_encode(self.timeout_seconds, serializer);
     }
 }
 
@@ -3688,6 +3701,13 @@ impl SseEncode for u32 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         serializer.cursor.write_u32::<NativeEndian>(self).unwrap();
+    }
+}
+
+impl SseEncode for u64 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        serializer.cursor.write_u64::<NativeEndian>(self).unwrap();
     }
 }
 

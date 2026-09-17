@@ -26,6 +26,12 @@ pub struct Connection {
     pub tags: Vec<String>,
     pub notes: Option<String>,
     pub jump_host_id: Option<String>,
+    #[serde(default = "default_timeout")]
+    pub timeout_seconds: u64,
+}
+
+fn default_timeout() -> u64 {
+    30
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -51,6 +57,7 @@ impl Connection {
             tags: Vec::new(),
             notes: None,
             jump_host_id: None,
+            timeout_seconds: default_timeout(),
         }
     }
 }

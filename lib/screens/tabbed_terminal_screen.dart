@@ -337,6 +337,7 @@ class _TerminalSessionViewState extends State<TerminalSessionView>
               tags: connectionToUse.tags,
               notes: connectionToUse.notes,
               jumpHostId: connectionToUse.jumpHostId,
+              timeoutSeconds: connectionToUse.timeoutSeconds,
             );
           }
         }

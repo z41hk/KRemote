@@ -1,11 +1,28 @@
 use ssh2::{Channel, Session};
 use std::io::{Read, Write};
-use std::net::{TcpListener, TcpStream};
+use std::net::{TcpListener, TcpStream, ToSocketAddrs};
 use std::sync::{Arc, Mutex};
 use std::thread;
+use std::time::Duration;
 
 use super::models::Connection;
 use crate::frb_generated::StreamSink;
+
+/// Resolve `host:port` to a single `SocketAddr` and connect with a timeout.
+/// `TcpStream::connect_timeout` requires a single resolved address (unlike
+/// `TcpStream::connect`, which accepts anything implementing `ToSocketAddrs`
+/// and tries each candidate in turn), so we resolve here and use the first
+/// address DNS returns.
+fn connect_with_timeout(address: &str, timeout_seconds: u64) -> Result<TcpStream, String> {
+    let addr = address
+        .to_socket_addrs()
+        .map_err(|e| format!("Failed to resolve {}: {}", address, e))?
+        .next()
+        .ok_or_else(|| format!("No addresses found for {}", address))?;
+
+    TcpStream::connect_timeout(&addr, Duration::from_secs(timeout_seconds))
+        .map_err(|e| format!("Failed to connect to {} (timeout {}s): {}", address, timeout_seconds, e))
+}
 
 #[flutter_rust_bridge::frb(opaque)]
 pub struct SshConnection {
@@ -44,8 +61,7 @@ impl SshConnection {
         // Otherwise, connect directly
         let address = format!("{}:{}", connection.host, connection.port);
 
-        let tcp = TcpStream::connect(&address)
-            .map_err(|e| format!("Failed to connect to {}: {}", address, e))?;
+        let tcp = connect_with_timeout(&address, connection.timeout_seconds)?;
 
         let mut session = Session::new()
             .map_err(|e| format!("Failed to create SSH session: {}", e))?;
@@ -77,8 +93,7 @@ impl SshConnection {
     ) -> Result<(), String> {
         // Connect and authenticate to the jump host
         let jump_address = format!("{}:{}", jump_host.host, jump_host.port);
-        let jump_tcp = TcpStream::connect(&jump_address)
-            .map_err(|e| format!("Failed to connect to jump host {}: {}", jump_address, e))?;
+        let jump_tcp = connect_with_timeout(&jump_address, jump_host.timeout_seconds)?;
 
         let mut jump_session = Session::new()
             .map_err(|e| format!("Failed to create jump host session: {}", e))?;
@@ -444,6 +459,7 @@ pub fn test_ssh_connection(
         tags: Vec::new(),
         notes: None,
         jump_host_id: None,
+        timeout_seconds: 10,
     };
 
     let mut ssh = SshConnection::new();

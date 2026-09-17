@@ -263,6 +263,7 @@ class _HomeScreenState extends State<HomeScreen> {
               tags: connection.tags,
               notes: connection.notes,
               jumpHostId: connection.jumpHostId,
+              timeoutSeconds: connection.timeoutSeconds,
             );
             
             // Show loading dialog again
@@ -366,6 +367,7 @@ class _HomeScreenState extends State<HomeScreen> {
         tags: connection.tags,
         path: defaultVaultPath(),
         jumpHostId: connection.jumpHostId,
+        timeoutSeconds: connection.timeoutSeconds,
       );
       await _loadConnections();
       if (!mounted) return;

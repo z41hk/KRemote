@@ -21,6 +21,7 @@ class _ConnectionDetailScreenState extends State<ConnectionDetailScreen> {
   final _passwordController = TextEditingController();
   final _privateKeyController = TextEditingController();
   final _tagInputController = TextEditingController();
+  final _timeoutController = TextEditingController();
 
   Protocol _selectedProtocol = Protocol.ssh;
   bool _obscurePassword = true;
@@ -44,12 +45,14 @@ class _ConnectionDetailScreenState extends State<ConnectionDetailScreen> {
       _usernameController.text = conn.username ?? '';
       _passwordController.text = conn.password ?? '';
       _privateKeyController.text = conn.privateKeyPath ?? '';
+      _timeoutController.text = conn.timeoutSeconds.toString();
       _selectedProtocol = conn.protocol;
       _selectedFolderId = conn.folderId;
       _selectedJumpHostId = conn.jumpHostId;
       _tags = List<String>.from(conn.tags);
     } else {
       _portController.text = '22'; // default SSH port
+      _timeoutController.text = '10'; // default 10 seconds
     }
     _loadFolders();
     _loadConnections();
@@ -101,6 +104,7 @@ class _ConnectionDetailScreenState extends State<ConnectionDetailScreen> {
     _passwordController.dispose();
     _privateKeyController.dispose();
     _tagInputController.dispose();
+    _timeoutController.dispose();
     super.dispose();
   }
 
@@ -141,6 +145,7 @@ class _ConnectionDetailScreenState extends State<ConnectionDetailScreen> {
 
     try {
       final jumpHostId = _selectedProtocol == Protocol.ssh ? _selectedJumpHostId : null;
+      final timeoutSeconds = int.parse(_timeoutController.text);
 
       if (widget.connection == null) {
         // Add new connection
@@ -156,6 +161,7 @@ class _ConnectionDetailScreenState extends State<ConnectionDetailScreen> {
           tags: _tags,
           path: path,
           jumpHostId: jumpHostId,
+          timeoutSeconds: BigInt.from(timeoutSeconds),
         );
       } else {
         // Update existing connection
@@ -172,6 +178,7 @@ class _ConnectionDetailScreenState extends State<ConnectionDetailScreen> {
           tags: _tags,
           notes: widget.connection!.notes,
           jumpHostId: jumpHostId,
+          timeoutSeconds: BigInt.from(timeoutSeconds),
         );
         await updateConnection(connection: updated, path: path);
       }
@@ -271,6 +278,26 @@ class _ConnectionDetailScreenState extends State<ConnectionDetailScreen> {
                 final port = int.tryParse(v);
                 if (port == null || port < 1 || port > 65535) {
                   return 'Enter a valid port (1-65535)';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _timeoutController,
+              keyboardType: TextInputType.number,
+              style: const TextStyle(color: Color(0xFFF8FAFC)),
+              decoration: InputDecoration(
+                labelText: 'Connection Timeout (seconds)',
+                hintText: '10',
+                prefixIcon: const Icon(Icons.timer_outlined),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              validator: (v) {
+                if (v == null || v.isEmpty) return 'Timeout required';
+                final timeout = int.tryParse(v);
+                if (timeout == null || timeout < 1 || timeout > 300) {
+                  return 'Enter a valid timeout (1-300 seconds)';
                 }
                 return null;
               },

@@ -106,6 +106,7 @@ pub fn add_connection(
     tags: Vec<String>,
     path: String,
     jump_host_id: Option<String>,
+    timeout_seconds: u64,
 ) -> Result<Connection, String> {
     let mut connection = Connection::new(name, protocol, host, port);
     connection.username = username;
@@ -114,6 +115,7 @@ pub fn add_connection(
     connection.folder_id = folder_id;
     connection.tags = tags;
     connection.jump_host_id = jump_host_id;
+    connection.timeout_seconds = timeout_seconds;
 
     vault().add_connection(connection.clone())?;
     vault().save_to_file(&path)?;

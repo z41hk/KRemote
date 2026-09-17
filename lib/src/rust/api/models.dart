@@ -7,6 +7,7 @@ import '../frb_generated.dart';
 
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
+// These functions are ignored because they are not marked as `pub`: `default_timeout`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `clone`, `clone`, `clone`, `eq`, `fmt`, `fmt`, `fmt`
 
 class Connection {
@@ -23,6 +24,7 @@ class Connection {
   final List<String> tags;
   final String? notes;
   final String? jumpHostId;
+  final BigInt timeoutSeconds;
 
   const Connection({
     required this.id,
@@ -38,6 +40,7 @@ class Connection {
     required this.tags,
     this.notes,
     this.jumpHostId,
+    required this.timeoutSeconds,
   });
 
   // HINT: Make it `#[frb(sync)]` to let it become the default constructor of Dart class.
@@ -67,7 +70,8 @@ class Connection {
       folderId.hashCode ^
       tags.hashCode ^
       notes.hashCode ^
-      jumpHostId.hashCode;
+      jumpHostId.hashCode ^
+      timeoutSeconds.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -86,7 +90,8 @@ class Connection {
           folderId == other.folderId &&
           tags == other.tags &&
           notes == other.notes &&
-          jumpHostId == other.jumpHostId;
+          jumpHostId == other.jumpHostId &&
+          timeoutSeconds == other.timeoutSeconds;
 }
 
 class Folder {

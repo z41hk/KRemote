@@ -248,6 +248,7 @@ abstract class RustLibApi extends BaseApi {
     required List<String> tags,
     required String path,
     String? jumpHostId,
+    required BigInt timeoutSeconds,
   });
 
   Future<Folder> crateApiAppAddFolder({
@@ -1675,6 +1676,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required List<String> tags,
     required String path,
     String? jumpHostId,
+    required BigInt timeoutSeconds,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -1691,6 +1693,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_list_String(tags, serializer);
           sse_encode_String(path, serializer);
           sse_encode_opt_String(jumpHostId, serializer);
+          sse_encode_u_64(timeoutSeconds, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -1715,6 +1718,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           tags,
           path,
           jumpHostId,
+          timeoutSeconds,
         ],
         apiImpl: this,
       ),
@@ -1735,6 +1739,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       "tags",
       "path",
       "jumpHostId",
+      "timeoutSeconds",
     ],
   );
 
@@ -2820,8 +2825,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Connection dco_decode_connection(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 13)
-      throw Exception('unexpected arr length: expect 13 but see ${arr.length}');
+    if (arr.length != 14)
+      throw Exception('unexpected arr length: expect 14 but see ${arr.length}');
     return Connection(
       id: dco_decode_String(arr[0]),
       name: dco_decode_String(arr[1]),
@@ -2836,6 +2841,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       tags: dco_decode_list_String(arr[10]),
       notes: dco_decode_opt_String(arr[11]),
       jumpHostId: dco_decode_opt_String(arr[12]),
+      timeoutSeconds: dco_decode_u_64(arr[13]),
     );
   }
 
@@ -2931,6 +2937,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   int dco_decode_u_32(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as int;
+  }
+
+  @protected
+  BigInt dco_decode_u_64(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dcoDecodeU64(raw);
   }
 
   @protected
@@ -3139,6 +3151,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_tags = sse_decode_list_String(deserializer);
     var var_notes = sse_decode_opt_String(deserializer);
     var var_jumpHostId = sse_decode_opt_String(deserializer);
+    var var_timeoutSeconds = sse_decode_u_64(deserializer);
     return Connection(
       id: var_id,
       name: var_name,
@@ -3153,6 +3166,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       tags: var_tags,
       notes: var_notes,
       jumpHostId: var_jumpHostId,
+      timeoutSeconds: var_timeoutSeconds,
     );
   }
 
@@ -3266,6 +3280,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   int sse_decode_u_32(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getUint32();
+  }
+
+  @protected
+  BigInt sse_decode_u_64(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getBigUint64();
   }
 
   @protected
@@ -3492,6 +3512,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_list_String(self.tags, serializer);
     sse_encode_opt_String(self.notes, serializer);
     sse_encode_opt_String(self.jumpHostId, serializer);
+    sse_encode_u_64(self.timeoutSeconds, serializer);
   }
 
   @protected
@@ -3606,6 +3627,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   void sse_encode_u_32(int self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putUint32(self);
+  }
+
+  @protected
+  void sse_encode_u_64(BigInt self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putBigUint64(self);
   }
 
   @protected
