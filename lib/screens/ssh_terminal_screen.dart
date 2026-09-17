@@ -21,6 +21,7 @@ class _SshTerminalScreenState extends State<SshTerminalScreen> {
   String? _error;
   SshConnection? _sshConnection;
   StreamSubscription<Uint8List>? _outputSubscription;
+  final FocusNode _terminalFocusNode = FocusNode(debugLabel: 'ssh_terminal');
 
   @override
   void initState() {
@@ -29,6 +30,14 @@ class _SshTerminalScreenState extends State<SshTerminalScreen> {
       maxLines: 10000,
     );
     _connectAndStartShell();
+  }
+
+  void _requestTerminalFocus() {
+    if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _terminalFocusNode.requestFocus();
+    });
   }
 
   Future<void> _connectAndStartShell() async {
@@ -79,6 +88,7 @@ class _SshTerminalScreenState extends State<SshTerminalScreen> {
       };
 
       setState(() => _isConnecting = false);
+      _requestTerminalFocus();
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -93,6 +103,7 @@ class _SshTerminalScreenState extends State<SshTerminalScreen> {
     _outputSubscription?.cancel();
     _sshConnection?.closeShell();
     _sshConnection?.disconnect();
+    _terminalFocusNode.dispose();
     super.dispose();
   }
 
@@ -123,6 +134,7 @@ class _SshTerminalScreenState extends State<SshTerminalScreen> {
       ),
       body: TerminalView(
         _terminal,
+        focusNode: _terminalFocusNode,
         theme: TerminalTheme(
           cursor: const Color(0xFF22D3EE),
           selection: const Color(0xFF4FD1C5),
@@ -155,7 +167,7 @@ class _SshTerminalScreenState extends State<SshTerminalScreen> {
         ),
         autofocus: true,
         backgroundOpacity: 1.0,
-        hardwareKeyboardOnly: false,
+        hardwareKeyboardOnly: true,
         readOnly: false,
       ),
     );

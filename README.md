@@ -40,11 +40,11 @@ An open-source, cross-platform remote connection manager inspired by mRemoteNG b
 
 Pre-built binaries are available on the [Releases page](https://github.com/z41hk/KRemote/releases).
 
-**Latest: v0.3.1 (Windows x64 + Linux x64)**
-- **Windows**: Download `KRemote-v0.3.1-windows-x64.zip`, extract, and run `kremote.exe`
-- **Linux**: Download `KRemote-v0.3.1-linux-x64.tar.gz`, extract, and run `./kremote`
+**Latest: v0.3.2 (Windows x64 + Linux x64)**
+- **Windows**: Download `KRemote-v0.3.2-windows-x64.zip`, extract, and run `kremote.exe`
+- **Linux**: Download `KRemote-v0.3.2-linux-x64.tar.gz`, extract, and run `./kremote`
 - No installation required (portable)
-- New in this release: **Fixed SSH terminal keyboard input** — you can now type commands in SSH sessions
+- New in this release: **Fixed SSH terminal keyboard input** — switched to hardware keyboard mode for reliable character input on all desktop platforms
 - This is an early alpha — expect rough edges and breaking changes between releases
 
 ## Project Vision
@@ -65,6 +65,7 @@ This is an active work-in-progress. What's working today:
 - **Encrypted credential vault** with master password protection (Argon2id + AES-256-GCM)
 - **Cross-platform architecture** using Flutter (UI) + Rust (crypto/network/protocol logic)
 - **Connection management**: add, edit, delete, organize connections with folders and tags
+- **SSH interactive terminal** with full PTY support (xterm emulation, hardware keyboard input)
 - **SSH connection testing** via libssh2 (password and SSH key authentication)
 - **Multi-protocol support** foundation (SSH, RDP, VNC, HTTP/HTTPS, VPN)
 - **Import/export** functionality for connection backup and migration

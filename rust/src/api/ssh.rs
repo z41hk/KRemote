@@ -218,6 +218,11 @@ impl SshConnection {
             .shell()
             .map_err(|e| format!("Failed to start shell: {}", e))?;
 
+        // CRITICAL: Switch to non-blocking mode to prevent deadlock.
+        // The reader thread would otherwise block indefinitely while holding
+        // the session lock, preventing send_input from writing.
+        session.set_blocking(false);
+
         // Store the channel for later write/resize/close operations
         {
             let mut guard = self.shell_channel.lock().unwrap();
@@ -240,8 +245,12 @@ impl SshConnection {
                             break;
                         }
                     }
+                    Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                        // No data available yet in non-blocking mode, sleep briefly
+                        thread::sleep(std::time::Duration::from_millis(10));
+                    }
                     Err(e) => {
-                        // Read error (connection dropped, etc.)
+                        // Real read error (connection dropped, etc.)
                         eprintln!("SSH shell read error: {}", e);
                         break;
                     }
@@ -259,8 +268,25 @@ impl SshConnection {
         let channel = guard.as_ref().ok_or("Shell not opened")?;
 
         let mut ch = channel.clone();
-        ch.write_all(&data)
-            .map_err(|e| format!("Failed to write to shell: {}", e))?;
+        
+        // In non-blocking mode, retry WouldBlock errors briefly
+        let mut written = 0;
+        let timeout = std::time::Duration::from_secs(2);
+        let start = std::time::Instant::now();
+        
+        while written < data.len() {
+            match ch.write(&data[written..]) {
+                Ok(n) => written += n,
+                Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                    if start.elapsed() > timeout {
+                        return Err("Write timeout: shell not ready".to_string());
+                    }
+                    thread::sleep(std::time::Duration::from_millis(10));
+                }
+                Err(e) => return Err(format!("Failed to write to shell: {}", e)),
+            }
+        }
+        
         ch.flush()
             .map_err(|e| format!("Failed to flush shell: {}", e))?;
 
@@ -273,8 +299,23 @@ impl SshConnection {
         let channel = guard.as_ref().ok_or("Shell not opened")?;
 
         let mut ch = channel.clone();
-        ch.request_pty_size(cols, rows, None, None)
-            .map_err(|e| format!("Failed to resize PTY: {}", e))?;
+
+        // request_pty_size can also return WouldBlock in non-blocking mode;
+        // retry briefly rather than failing the resize outright.
+        let timeout = std::time::Duration::from_secs(1);
+        let start = std::time::Instant::now();
+        loop {
+            match ch.request_pty_size(cols, rows, None, None) {
+                Ok(()) => break,
+                Err(e) if e.to_string().contains("EAGAIN") || format!("{:?}", e).contains("WouldBlock") => {
+                    if start.elapsed() > timeout {
+                        return Err("Resize timeout: shell not ready".to_string());
+                    }
+                    thread::sleep(std::time::Duration::from_millis(10));
+                }
+                Err(e) => return Err(format!("Failed to resize PTY: {}", e)),
+            }
+        }
 
         Ok(())
     }
@@ -283,8 +324,10 @@ impl SshConnection {
     pub fn close_shell(&self) -> Result<(), String> {
         let mut guard = self.shell_channel.lock().unwrap();
         if let Some(mut channel) = guard.take() {
-            channel.close().map_err(|e| format!("Failed to close channel: {}", e))?;
-            channel.wait_close().map_err(|e| format!("Failed to wait for close: {}", e))?;
+            // Best-effort close; non-blocking mode may return WouldBlock here,
+            // which is fine to ignore since we're tearing the channel down anyway.
+            let _ = channel.close();
+            let _ = channel.wait_close();
         }
         Ok(())
     }
