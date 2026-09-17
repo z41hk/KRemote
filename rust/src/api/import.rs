@@ -113,6 +113,7 @@ fn parse_nodes(
                 notes: description,
                 jump_host_id: None,
                 timeout_seconds: 30,
+                domain: None,
             };
 
             connections.push(connection);

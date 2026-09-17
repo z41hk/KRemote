@@ -40,11 +40,12 @@ An open-source, cross-platform remote connection manager inspired by mRemoteNG b
 
 Pre-built binaries are available on the [Releases page](https://github.com/z41hk/KRemote/releases).
 
-**Latest: v0.10.0 (Windows x64 + Linux x64)**
-- **Windows**: Download `KRemote-v0.10.0-windows.zip`, extract, and run `kremote.exe`
-- **Linux**: Download `KRemote-v0.10.0-linux-x64.tar.gz`, extract, and run `./kremote`
+**Latest: v0.11.0 (Windows x64 + Linux x64)**
+- **Windows**: Download `KRemote-v0.11.0-windows.zip`, extract, and run `kremote.exe`
+- **Linux**: Download `KRemote-v0.11.0-linux-x64.tar.gz`, extract, and run `./kremote`
 - No installation required (portable)
-- **New in v0.10.0**: Dynamic window title (shows active connection name), delete confirmation dialogs for connections/folders
+- **New in v0.11.0**: RDP protocol foundation — IronRDP integration complete, protocol connection testing, domain field support, framebuffer API ready (UI coming next)
+- **v0.10.0**: Dynamic window title (shows active connection name), delete confirmation dialogs for connections/folders
 - **v0.9.0**: Connection timeout configuration — set custom timeout (1-300s) per connection, defaults to 30s
 - **v0.8.x**: OS keyring integration for master password caching (auto-unlock on startup), Lock Vault bugfixes
 - **v0.7.0**: SSH key passphrase prompt for encrypted private keys

@@ -76,6 +76,7 @@ Future<Connection> addConnection({
   required String path,
   String? jumpHostId,
   required BigInt timeoutSeconds,
+  String? domain,
 }) => RustLib.instance.api.crateApiAppAddConnection(
   name: name,
   protocol: protocol,
@@ -89,6 +90,7 @@ Future<Connection> addConnection({
   path: path,
   jumpHostId: jumpHostId,
   timeoutSeconds: timeoutSeconds,
+  domain: domain,
 );
 
 /// Retrieve all connections currently stored in the unlocked vault.

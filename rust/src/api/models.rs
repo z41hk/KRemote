@@ -28,6 +28,9 @@ pub struct Connection {
     pub jump_host_id: Option<String>,
     #[serde(default = "default_timeout")]
     pub timeout_seconds: u64,
+    /// Windows domain for RDP authentication (optional, RDP-only)
+    #[serde(default)]
+    pub domain: Option<String>,
 }
 
 fn default_timeout() -> u64 {
@@ -58,6 +61,7 @@ impl Connection {
             notes: None,
             jump_host_id: None,
             timeout_seconds: default_timeout(),
+            domain: None,
         }
     }
 }

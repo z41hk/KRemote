@@ -2,6 +2,7 @@ use std::sync::OnceLock;
 
 use super::import;
 use super::models::{Connection, Folder, Protocol};
+use super::rdp;
 use super::ssh;
 use super::vault::Vault;
 
@@ -107,6 +108,7 @@ pub fn add_connection(
     path: String,
     jump_host_id: Option<String>,
     timeout_seconds: u64,
+    domain: Option<String>,
 ) -> Result<Connection, String> {
     let mut connection = Connection::new(name, protocol, host, port);
     connection.username = username;
@@ -116,6 +118,7 @@ pub fn add_connection(
     connection.tags = tags;
     connection.jump_host_id = jump_host_id;
     connection.timeout_seconds = timeout_seconds;
+    connection.domain = domain;
 
     vault().add_connection(connection.clone())?;
     vault().save_to_file(&path)?;
@@ -157,7 +160,17 @@ pub fn test_connection(connection_id: String) -> Result<String, String> {
             ssh_conn.connect(&connection)?;
             ssh_conn.test_connection()
         }
-        _ => Err("Only SSH connection testing is currently implemented".to_string()),
+        Protocol::Rdp => {
+            let mut rdp_conn = rdp::RdpConnection::new();
+            rdp_conn.connect(&connection)?;
+            let (width, height) = rdp_conn.get_size();
+            rdp_conn.disconnect()?;
+            Ok(format!(
+                "RDP connection successful ({}x{})",
+                width, height
+            ))
+        }
+        _ => Err("Only SSH and RDP connection testing are currently implemented".to_string()),
     }
 }
 

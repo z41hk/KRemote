@@ -7,6 +7,7 @@ import 'package:kremote/widgets/passphrase_dialog.dart';
 import 'vault_screen.dart';
 import 'connection_detail_screen.dart';
 import 'tabbed_terminal_screen.dart';
+import 'rdp_session_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -315,8 +316,10 @@ class _HomeScreenState extends State<HomeScreen> {
         );
         break;
       case Protocol.rdp:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('RDP support coming soon')),
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => RdpSessionScreen(connection: connection),
+          ),
         );
         break;
       case Protocol.vnc:

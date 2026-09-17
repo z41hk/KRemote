@@ -460,6 +460,7 @@ pub fn test_ssh_connection(
         notes: None,
         jump_host_id: None,
         timeout_seconds: 10,
+        domain: None,
     };
 
     let mut ssh = SshConnection::new();

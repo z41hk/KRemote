@@ -20,6 +20,7 @@ class _ConnectionDetailScreenState extends State<ConnectionDetailScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _privateKeyController = TextEditingController();
+  final _domainController = TextEditingController();
   final _tagInputController = TextEditingController();
   final _timeoutController = TextEditingController();
 
@@ -45,6 +46,7 @@ class _ConnectionDetailScreenState extends State<ConnectionDetailScreen> {
       _usernameController.text = conn.username ?? '';
       _passwordController.text = conn.password ?? '';
       _privateKeyController.text = conn.privateKeyPath ?? '';
+      _domainController.text = conn.domain ?? '';
       _timeoutController.text = conn.timeoutSeconds.toString();
       _selectedProtocol = conn.protocol;
       _selectedFolderId = conn.folderId;
@@ -103,6 +105,7 @@ class _ConnectionDetailScreenState extends State<ConnectionDetailScreen> {
     _usernameController.dispose();
     _passwordController.dispose();
     _privateKeyController.dispose();
+    _domainController.dispose();
     _tagInputController.dispose();
     _timeoutController.dispose();
     super.dispose();
@@ -145,6 +148,9 @@ class _ConnectionDetailScreenState extends State<ConnectionDetailScreen> {
 
     try {
       final jumpHostId = _selectedProtocol == Protocol.ssh ? _selectedJumpHostId : null;
+      final domain = _selectedProtocol == Protocol.rdp && _domainController.text.isNotEmpty 
+          ? _domainController.text.trim() 
+          : null;
       final timeoutSeconds = int.parse(_timeoutController.text);
 
       if (widget.connection == null) {
@@ -162,6 +168,7 @@ class _ConnectionDetailScreenState extends State<ConnectionDetailScreen> {
           path: path,
           jumpHostId: jumpHostId,
           timeoutSeconds: BigInt.from(timeoutSeconds),
+          domain: domain,
         );
       } else {
         // Update existing connection
@@ -179,6 +186,7 @@ class _ConnectionDetailScreenState extends State<ConnectionDetailScreen> {
           notes: widget.connection!.notes,
           jumpHostId: jumpHostId,
           timeoutSeconds: BigInt.from(timeoutSeconds),
+          domain: domain,
         );
         await updateConnection(connection: updated, path: path);
       }
@@ -338,6 +346,19 @@ class _ConnectionDetailScreenState extends State<ConnectionDetailScreen> {
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),
             ),
+            if (_selectedProtocol == Protocol.rdp) ...[
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _domainController,
+                style: const TextStyle(color: Color(0xFFF8FAFC)),
+                decoration: InputDecoration(
+                  labelText: 'Domain (Optional)',
+                  hintText: 'WORKGROUP or DOMAIN',
+                  prefixIcon: const Icon(Icons.domain_outlined),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ],
             if (_selectedProtocol == Protocol.ssh) ...[
               const SizedBox(height: 16),
               TextFormField(

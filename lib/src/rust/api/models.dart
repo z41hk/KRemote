@@ -26,6 +26,9 @@ class Connection {
   final String? jumpHostId;
   final BigInt timeoutSeconds;
 
+  /// Windows domain for RDP authentication (optional, RDP-only)
+  final String? domain;
+
   const Connection({
     required this.id,
     required this.name,
@@ -41,6 +44,7 @@ class Connection {
     this.notes,
     this.jumpHostId,
     required this.timeoutSeconds,
+    this.domain,
   });
 
   // HINT: Make it `#[frb(sync)]` to let it become the default constructor of Dart class.
@@ -71,7 +75,8 @@ class Connection {
       tags.hashCode ^
       notes.hashCode ^
       jumpHostId.hashCode ^
-      timeoutSeconds.hashCode;
+      timeoutSeconds.hashCode ^
+      domain.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -91,7 +96,8 @@ class Connection {
           tags == other.tags &&
           notes == other.notes &&
           jumpHostId == other.jumpHostId &&
-          timeoutSeconds == other.timeoutSeconds;
+          timeoutSeconds == other.timeoutSeconds &&
+          domain == other.domain;
 }
 
 class Folder {
