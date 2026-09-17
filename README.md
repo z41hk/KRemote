@@ -40,12 +40,15 @@ An open-source, cross-platform remote connection manager inspired by mRemoteNG b
 
 Pre-built binaries are available on the [Releases page](https://github.com/z41hk/KRemote/releases).
 
-**Latest: v0.8.1 (Windows x64 + Linux x64)**
-- **Windows**: Download `KRemote-v0.8.1-windows-x64.zip`, extract, and run `kremote.exe`
-- **Linux**: Download `KRemote-v0.8.1-linux-x64.tar.gz`, extract, and run `./kremote`
+**Latest: v0.9.0 (Windows x64 + Linux x64)**
+- **Windows**: Download `KRemote-v0.9.0-windows-x64.zip`, extract, and run `kremote.exe`
+- **Linux**: Download `KRemote-v0.9.0-linux-x64.tar.gz`, extract, and run `./kremote`
 - No installation required (portable)
-- Bugfix release: **Lock Vault now actually logs you out** — pressing "Lock Vault" no longer instantly auto-unlocks again when "Remember master password" is enabled; unchecking that box now clears the saved credential from Windows Credential Manager / Linux Secret Service immediately instead of waiting for the next successful unlock
-- Also in v0.8.0: **OS keyring integration** — optionally cache your master password for automatic vault unlock on startup (opt-in via "Remember master password" checkbox)
+- **New in v0.9.0**: Connection timeout configuration — set custom timeout (1-300s) per connection, defaults to 30s
+- **v0.8.x**: OS keyring integration for master password caching (auto-unlock on startup), Lock Vault bugfixes
+- **v0.7.0**: SSH key passphrase prompt for encrypted private keys
+- **v0.6.0**: Session tabs & reconnect — multiple terminals, per-tab reconnect banners
+- **v0.5.0**: Jump host tunneling — route SSH through bastion hosts
 - This is an early alpha — expect rough edges and breaking changes between releases
 
 ## Project Vision
@@ -65,6 +68,7 @@ This is an active work-in-progress. What's working today:
 ### ✅ Implemented
 - **Encrypted credential vault** with master password protection (Argon2id + AES-256-GCM)
 - **OS keyring integration** for master password caching (Windows Credential Manager / Linux Secret Service) — opt-in auto-unlock
+- **Connection timeout configuration** - set custom timeout (1-300s) per connection, defaults to 30s
 - **Cross-platform architecture** using Flutter (UI) + Rust (crypto/network/protocol logic)
 - **Connection management**: add, edit, delete, organize connections with folders and tags
 - **SSH interactive terminal** with full PTY support (xterm emulation, hardware keyboard input)
@@ -247,6 +251,7 @@ kremote/
    - **Host**: IP or hostname
    - **Port**: Default is auto-filled per protocol
    - **Credentials**: Username, password, or SSH private key path
+   - **Timeout**: Connection timeout in seconds (1-300s, defaults to 30s)
    - **Folder**: Optional folder ID for organization
    - **Tags**: Comma-separated tags (e.g., "production,linux,web")
    - **Jump Host**: Optional bastion/jump host ID for tunneling
