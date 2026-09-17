@@ -271,32 +271,139 @@ M rust/src/api/ssh.rs                   (non-blocking mode + retry logic - verif
 
 ---
 
+## Latest Release (v0.4.0)
+
+**Released**: 2026-09-17  
+**Release URL**: https://github.com/z41hk/KRemote/releases/tag/v0.4.0
+
+### Downloads
+- **Windows**: KRemote-v0.4.0-windows-x64.zip  
+- **Linux**: KRemote-v0.4.0-linux-x64.tar.gz
+
+### Changelog
+- ✅ **SSH terminal keyboard input fixed**: Removed outer GestureDetector wrapper blocking xterm's internal focus handling
+- ✅ Advanced organization features: tag assignment UI, folder assignment, filtering, folder tree view
+- ✅ Connection management: cloning, import/export (mRemoteNG XML, JSON), enhanced cards with tags
+- ✅ SSH session deadlock fixed: Non-blocking mode with retry logic for WouldBlock errors
+
+---
+
 ## Contact / Handoff Notes for Next Session
 
-### What Was Fixed This Session (v0.4.0)
-1. ✅ **Confirmed keyboard input bug was already fixed** (commit 4b784b2 from prior session)
-2. ✅ **Verified all existing UI features are implemented:**
-   - Tag assignment UI with chip-based add/remove (connection_detail_screen.dart:340-369)
-   - Folder assignment dropdown (connection_detail_screen.dart:319-339)
-   - Advanced filtering: search, protocol, folder (home_screen.dart)
-   - Folder expand/collapse in home screen
-   - Connection import/export (confirmed implemented based on git diff)
-3. ✅ Cleaned up PROGRESS.md to reflect current state accurately
+### What Was Completed This Session (v0.4.0 Release)
+1. ✅ **Keyboard input bug fix verified and released**
+2. ✅ **Released v0.4.0 with both Windows and Linux builds**
+   - Windows: KRemote-v0.4.0-windows-x64.zip (12.2 MB)
+   - Linux: KRemote-v0.4.0-linux-x64.tar.gz (built via GitHub Actions)
+   - Release notes updated with full changelog
+3. ✅ **PROGRESS.md updated with handoff instructions**
 
-### Start Here Next Session
-1. Add jump host/bastion support (skeleton exists but not implemented)
-2. Add session tabs (multiple SSH sessions in one window)
-3. Implement session reconnect on disconnect
-4. Add SSH key passphrase prompt for encrypted private keys
+### Priority Roadmap for Next Sessions
+
+#### Phase 6A: Enhanced Connectivity (High Priority)
+1. **Jump host/bastion support** - Skeleton exists at `ssh.rs:64-131` but incomplete
+   - Current: `connect_via_jump_host()` authenticates jump host but doesn't tunnel
+   - Need: Use `session.channel_direct_tcpip()` to forward traffic through jump host
+   - Challenge: `ssh2::Channel` doesn't implement `AsRawSocket`, need custom Read+Write wrapper
+   - Alternative: ProxyCommand-style approach or async bridge layer
+
+2. **Session tabs** - Multiple SSH connections in one window
+   - Add tab bar widget to main window
+   - Store multiple `SshConnection` instances
+   - Switch between active terminals
+   - Close individual tabs without closing app
+
+3. **Session reconnect on disconnect**
+   - Detect connection loss (reader thread exits)
+   - Show "Disconnected" banner in terminal
+   - Add "Reconnect" button
+   - Preserve terminal history after reconnect
+
+#### Phase 6B: Security & UX (Medium Priority)
+4. **SSH key passphrase prompt**
+   - Detect encrypted private keys (PEM headers)
+   - Show password dialog for passphrase
+   - Pass passphrase to `session.userauth_pubkey_file()`
+
+5. **Connection timeout configuration**
+   - Add timeout field to Connection model
+   - Configure `TcpStream::connect_timeout()`
+   - Show countdown in connection dialog
+
+6. **Delete confirmation dialog**
+   - Add "Are you sure?" before deleting connections/folders
+   - Prevent accidental data loss
+
+7. **Window title updates**
+   - Set window title to active connection name
+   - Show connection status (connecting/connected/disconnected)
+
+#### Phase 6C: Credential Security (Critical for Production)
+8. **Encrypted credential storage**
+   - ⚠️ **SECURITY RISK**: Credentials currently stored in plaintext SQLite
+   - Options:
+     - Windows: DPAPI (Windows Data Protection API)
+     - Linux: Secret Service API (libsecret)
+     - Cross-platform: age encryption with OS keyring for master key
+   - Migrate existing plaintext credentials to encrypted vault
+
+#### Phase 7: Additional Protocols (Long Term)
+9. **VNC protocol support**
+   - Evaluate Rust VNC client crates (`vnc-rs`, `rfb`)
+   - Implement VNC viewer widget (bitmap rendering)
+   - Add VNC connection type to UI
+
+10. **RDP protocol support**
+    - Evaluate RDP libraries (`rdp-rs` or FFI to FreeRDP)
+    - Windows RemoteApp support
+    - RDP connection type in UI
+
+11. **HTTP/HTTPS viewer**
+    - Embedded webview widget
+    - Browser-like navigation for web-based management consoles
+
+#### Phase 8: Mobile & Enterprise (Future)
+12. **Mobile apps** (Android/iOS)
+    - Touch gesture → keyboard/mouse translation
+    - Virtual keyboard handling
+    - Mobile-optimized connection list
+
+13. **Team features**
+    - User authentication system
+    - Shared credential vaults with RBAC
+    - Audit logs & session recordings
+    - E2E encrypted sync (zero-knowledge)
 
 ### Commands to Resume Work
 ```bash
+# Navigate to project
 cd C:\Users\User\dev\kremote
+
+# Set Flutter path
 $env:Path = "C:\Users\User\dev\flutter\bin;" + $env:Path
+
+# Check status
 git status
+git log --oneline -5
+
+# Analyze code
 flutter analyze
+
+# Build and test
 flutter build windows --release
 ./build/windows/x64/runner/Release/kremote.exe
+
+# Run GitHub Actions build
+gh workflow run "Build and Release"
+gh run list --limit 5
 ```
 
-All core SSH terminal functionality is now working. Focus next on user workflow improvements and additional protocols (VNC/RDP).
+### Key Files Reference
+- **SSH implementation**: `rust/src/api/ssh.rs` (10 public functions, jump host skeleton at line 64)
+- **Terminal screen**: `lib/screens/ssh_terminal_screen.dart` (xterm integration, autofocus fixed)
+- **Connection UI**: `lib/screens/connection_detail_screen.dart` (folder/tag assignment)
+- **Home screen**: `lib/screens/home_screen.dart` (filtering, folder tree)
+- **Data models**: `rust/src/api/models.rs` (Connection struct, Protocol enum)
+- **Storage**: `rust/src/api/storage.rs` (SQLite persistence - needs encryption!)
+
+All core SSH terminal functionality is now working. Next focus: jump host tunneling, session tabs, and encrypted credential storage.
