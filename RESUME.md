@@ -7,13 +7,13 @@ $env:Path = "C:\Users\User\dev\flutter\bin;" + $env:Path
 git status
 ```
 
-## Current State (v0.7.0 Pending Release)
+## Current State (v0.7.0 Released)
 ✅ **All core SSH terminal features working**  
 ✅ **Jump host tunneling implemented and released**: https://github.com/z41hk/KRemote/releases/tag/v0.5.0  
 ✅ **Session tabs implemented and released**: https://github.com/z41hk/KRemote/releases/tag/v0.6.0  
 ✅ **Session reconnect implemented** (per-tab reconnect banner, ships alongside session tabs in v0.6.0)  
-✅ **SSH key passphrase prompt implemented** (encrypted private key support, targeting v0.7.0)  
-✅ **Windows build passing** (v0.7.0, pending release)  
+✅ **SSH key passphrase prompt implemented and released**: https://github.com/z41hk/KRemote/releases/tag/v0.7.0  
+✅ **Windows build released** (v0.7.0)  
 ✅ **Keyboard input bug fixed** (removed outer GestureDetector wrapper)  
 ✅ **Organization features complete** (folders, tags, filtering, import/export)
 
@@ -205,5 +205,5 @@ git push origin v0.4.1
 ---
 
 **Last Updated**: 2026-09-17  
-**Latest**: v0.7.0 (pending release) - SSH key passphrase prompt for encrypted private keys  
+**Latest**: v0.7.0 (released) - SSH key passphrase prompt for encrypted private keys - https://github.com/z41hk/KRemote/releases/tag/v0.7.0  
 **Next Priority**: Task #4 - OS keyring integration for master password caching, or Task #6 - Connection timeout configuration
