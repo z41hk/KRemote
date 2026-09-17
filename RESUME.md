@@ -7,9 +7,10 @@ $env:Path = "C:\Users\User\dev\flutter\bin;" + $env:Path
 git status
 ```
 
-## Current State (v0.4.0 Released)
+## Current State (v0.5.0 Released)
 ✅ **All core SSH terminal features working**  
-✅ **Windows + Linux builds released**: https://github.com/z41hk/KRemote/releases/tag/v0.4.0  
+✅ **Jump host tunneling implemented and released**: https://github.com/z41hk/KRemote/releases/tag/v0.5.0  
+✅ **Windows build released** (v0.5.0)  
 ✅ **Keyboard input bug fixed** (removed outer GestureDetector wrapper)  
 ✅ **Organization features complete** (folders, tags, filtering, import/export)
 
@@ -179,5 +180,5 @@ git push origin v0.4.1
 ---
 
 **Last Updated**: 2026-09-17  
-**Latest**: v0.4.0 released + Jump host tunneling implemented  
+**Latest**: v0.5.0 released with jump host tunneling  
 **Next Priority**: Session tabs (multiple terminals in one window)

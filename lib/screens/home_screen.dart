@@ -3,7 +3,7 @@ import 'package:kremote/src/rust/api/app.dart';
 import 'package:kremote/src/rust/api/models.dart';
 import 'vault_screen.dart';
 import 'connection_detail_screen.dart';
-import 'ssh_terminal_screen.dart';
+import 'tabbed_terminal_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -238,7 +238,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case Protocol.ssh:
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => SshTerminalScreen(connection: connection),
+            builder: (_) => TabbedTerminalScreen(initialConnection: connection),
           ),
         );
         break;
