@@ -67,6 +67,30 @@ pub fn vault_exists(path: String) -> bool {
     std::path::Path::new(&path).exists()
 }
 
+// ---- Keyring Integration ----
+
+/// Save the master password to the OS keyring for auto-unlock.
+pub fn save_master_password_to_keyring(password: String) -> Result<(), String> {
+    vault().save_password_to_keyring(&password)
+}
+
+/// Retrieve the master password from the OS keyring.
+/// Returns None if no password is stored.
+pub fn get_master_password_from_keyring() -> Result<Option<String>, String> {
+    vault().get_password_from_keyring()
+}
+
+/// Remove the master password from the OS keyring.
+pub fn delete_master_password_from_keyring() -> Result<(), String> {
+    vault().delete_password_from_keyring()
+}
+
+/// Check if a master password is currently stored in the OS keyring.
+#[flutter_rust_bridge::frb(sync)]
+pub fn is_master_password_in_keyring() -> bool {
+    vault().is_password_in_keyring()
+}
+
 // ---- Connections ----
 
 /// Add a new connection and persist the vault to `path`.

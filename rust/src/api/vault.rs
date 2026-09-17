@@ -10,6 +10,9 @@ use std::sync::Mutex;
 
 use super::models::{Connection, Folder};
 
+const KEYRING_SERVICE: &str = "KRemote";
+const KEYRING_USER: &str = "master_password";
+
 /// On-disk vault file format. `salt` and `password_hash` are stored
 /// unencrypted (as they must be, to verify the master password and derive
 /// the encryption key before anything else can be decrypted). The actual
@@ -50,6 +53,50 @@ impl Vault {
             state: Mutex::new(None),
             master_key: Mutex::new(None),
         }
+    }
+
+    // ---- Keyring integration ----
+
+    /// Store the master password in the OS keyring for auto-unlock.
+    /// Returns Ok(()) on success, or an error if the keyring is unavailable.
+    pub fn save_password_to_keyring(&self, password: &str) -> Result<(), String> {
+        let entry = keyring::Entry::new(KEYRING_SERVICE, KEYRING_USER)
+            .map_err(|e| format!("Failed to create keyring entry: {}", e))?;
+        
+        entry
+            .set_password(password)
+            .map_err(|e| format!("Failed to save password to keyring: {}", e))
+    }
+
+    /// Retrieve the master password from the OS keyring.
+    /// Returns Ok(Some(password)) if found, Ok(None) if not stored, or Err if keyring access fails.
+    pub fn get_password_from_keyring(&self) -> Result<Option<String>, String> {
+        let entry = keyring::Entry::new(KEYRING_SERVICE, KEYRING_USER)
+            .map_err(|e| format!("Failed to create keyring entry: {}", e))?;
+        
+        match entry.get_password() {
+            Ok(password) => Ok(Some(password)),
+            Err(keyring::Error::NoEntry) => Ok(None),
+            Err(e) => Err(format!("Failed to retrieve password from keyring: {}", e)),
+        }
+    }
+
+    /// Remove the master password from the OS keyring.
+    /// Returns Ok(()) whether or not a password was stored.
+    pub fn delete_password_from_keyring(&self) -> Result<(), String> {
+        let entry = keyring::Entry::new(KEYRING_SERVICE, KEYRING_USER)
+            .map_err(|e| format!("Failed to create keyring entry: {}", e))?;
+        
+        match entry.delete_password() {
+            Ok(()) => Ok(()),
+            Err(keyring::Error::NoEntry) => Ok(()), // Already deleted, treat as success
+            Err(e) => Err(format!("Failed to delete password from keyring: {}", e)),
+        }
+    }
+
+    /// Check if a master password is currently stored in the OS keyring.
+    pub fn is_password_in_keyring(&self) -> bool {
+        matches!(self.get_password_from_keyring(), Ok(Some(_)))
     }
 
     /// Create a brand new, empty vault protected by `master_password`.
@@ -356,5 +403,49 @@ impl Vault {
         cipher
             .decrypt(nonce, ciphertext)
             .map_err(|_| "Decryption failed - wrong password or corrupted data".to_string())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    /// Exercises the real OS keyring (Windows Credential Manager / Linux
+    /// Secret Service) through the `keyring` crate directly, using a
+    /// dedicated test-only service/user pair so this can never collide
+    /// with or delete a real stored master password under the app's
+    /// actual `KEYRING_SERVICE`/`KEYRING_USER` constants.
+    #[test]
+    fn keyring_roundtrip_set_get_delete() {
+        let service = "KRemote-Test";
+        let user = "keyring_roundtrip_test_user";
+        let password = "test-password-12345!";
+
+        let entry = keyring::Entry::new(service, user)
+            .expect("failed to create keyring entry");
+
+        // Clean up any leftover entry from a previous failed run.
+        let _ = entry.delete_password();
+
+        // Set
+        entry
+            .set_password(password)
+            .expect("failed to set password in OS keyring");
+
+        // Get
+        let retrieved = entry
+            .get_password()
+            .expect("failed to get password from OS keyring");
+        assert_eq!(retrieved, password, "retrieved password did not match what was stored");
+
+        // Delete
+        entry
+            .delete_password()
+            .expect("failed to delete password from OS keyring");
+
+        // Confirm deletion
+        match entry.get_password() {
+            Err(keyring::Error::NoEntry) => {}
+            Ok(_) => panic!("password still present after delete_password()"),
+            Err(e) => panic!("unexpected error after delete: {}", e),
+        }
     }
 }

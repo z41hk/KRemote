@@ -43,6 +43,25 @@ bool isVaultUnlocked() => RustLib.instance.api.crateApiAppIsVaultUnlocked();
 bool vaultExists({required String path}) =>
     RustLib.instance.api.crateApiAppVaultExists(path: path);
 
+/// Save the master password to the OS keyring for auto-unlock.
+Future<void> saveMasterPasswordToKeyring({required String password}) => RustLib
+    .instance
+    .api
+    .crateApiAppSaveMasterPasswordToKeyring(password: password);
+
+/// Retrieve the master password from the OS keyring.
+/// Returns None if no password is stored.
+Future<String?> getMasterPasswordFromKeyring() =>
+    RustLib.instance.api.crateApiAppGetMasterPasswordFromKeyring();
+
+/// Remove the master password from the OS keyring.
+Future<void> deleteMasterPasswordFromKeyring() =>
+    RustLib.instance.api.crateApiAppDeleteMasterPasswordFromKeyring();
+
+/// Check if a master password is currently stored in the OS keyring.
+bool isMasterPasswordInKeyring() =>
+    RustLib.instance.api.crateApiAppIsMasterPasswordInKeyring();
+
 /// Add a new connection and persist the vault to `path`.
 Future<Connection> addConnection({
   required String name,

@@ -20,6 +20,8 @@ class _VaultScreenState extends State<VaultScreen> {
   bool _isLoading = true;
   bool _vaultExists = false;
   bool _isSubmitting = false;
+  bool _rememberPassword = false;
+  bool _hasStoredPassword = false;
   String? _error;
 
   @override
@@ -37,10 +39,39 @@ class _VaultScreenState extends State<VaultScreen> {
 
   Future<void> _checkVaultExists() async {
     final path = defaultVaultPath();
+    final hasStored = isMasterPasswordInKeyring();
+    
     setState(() {
       _vaultExists = vaultExists(path: path);
+      _hasStoredPassword = hasStored;
       _isLoading = false;
     });
+
+    // If we have a stored password and the vault exists, try auto-unlock
+    if (_vaultExists && _hasStoredPassword) {
+      await _tryAutoUnlock();
+    }
+  }
+
+  Future<void> _tryAutoUnlock() async {
+    try {
+      final storedPassword = await getMasterPasswordFromKeyring();
+      if (storedPassword != null) {
+        final path = defaultVaultPath();
+        await unlockVault(masterPassword: storedPassword, path: path);
+        
+        if (!mounted) return;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      }
+    } catch (e) {
+      // Auto-unlock failed - show the form so user can enter password manually
+      setState(() {
+        _error = 'Auto-unlock failed: ${e.toString()}';
+        _hasStoredPassword = false; // Clear the stored password indicator
+      });
+    }
   }
 
   Future<void> _submit() async {
@@ -59,6 +90,26 @@ class _VaultScreenState extends State<VaultScreen> {
         await unlockVault(masterPassword: password, path: path);
       } else {
         await createVault(masterPassword: password, path: path);
+      }
+
+      // If "Remember me" is checked, save password to keyring
+      if (_rememberPassword) {
+        try {
+          await saveMasterPasswordToKeyring(password: password);
+        } catch (e) {
+          // Non-fatal: just log the error, don't block the unlock
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to save password: $e')),
+          );
+        }
+      } else if (_hasStoredPassword) {
+        // User unchecked "Remember me", so delete the stored password
+        try {
+          await deleteMasterPasswordFromKeyring();
+        } catch (e) {
+          // Non-fatal
+        }
       }
 
       if (!mounted) return;
@@ -174,6 +225,43 @@ class _VaultScreenState extends State<VaultScreen> {
                       onFieldSubmitted: (_) => _submit(),
                     ),
                   ],
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: _rememberPassword || _hasStoredPassword,
+                        onChanged: (value) {
+                          setState(() {
+                            _rememberPassword = value ?? false;
+                          });
+                        },
+                        activeColor: const Color(0xFF22D3EE),
+                      ),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _rememberPassword = !(_rememberPassword || _hasStoredPassword);
+                            });
+                          },
+                          child: Text(
+                            'Remember master password',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white.withValues(alpha: 0.85),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    'Saves password in Windows Credential Manager for auto-unlock',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.5),
+                    ),
+                  ),
                   if (_error != null) ...[
                     const SizedBox(height: 16),
                     Text(

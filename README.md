@@ -40,11 +40,11 @@ An open-source, cross-platform remote connection manager inspired by mRemoteNG b
 
 Pre-built binaries are available on the [Releases page](https://github.com/z41hk/KRemote/releases).
 
-**Latest: v0.7.0 (Windows x64 + Linux x64)**
-- **Windows**: Download `KRemote-v0.7.0-windows-x64.zip`, extract, and run `kremote.exe`
-- **Linux**: Download `KRemote-v0.7.0-linux-x64.tar.gz`, extract, and run `./kremote`
+**Latest: v0.8.0 (Windows x64 + Linux x64)**
+- **Windows**: Download `KRemote-v0.8.0-windows-x64.zip`, extract, and run `kremote.exe`
+- **Linux**: Download `KRemote-v0.8.0-linux-x64.tar.gz`, extract, and run `./kremote`
 - No installation required (portable)
-- New in this release: **SSH key passphrase prompt** — connect with encrypted private keys; KRemote detects a locked key and asks for the passphrase instead of failing the connection
+- New in this release: **OS keyring integration** — optionally cache your master password in Windows Credential Manager or Linux Secret Service for automatic vault unlock on startup (opt-in via "Remember master password" checkbox)
 - This is an early alpha — expect rough edges and breaking changes between releases
 
 ## Project Vision
@@ -63,6 +63,7 @@ This is an active work-in-progress. What's working today:
 
 ### ✅ Implemented
 - **Encrypted credential vault** with master password protection (Argon2id + AES-256-GCM)
+- **OS keyring integration** for master password caching (Windows Credential Manager / Linux Secret Service) — opt-in auto-unlock
 - **Cross-platform architecture** using Flutter (UI) + Rust (crypto/network/protocol logic)
 - **Connection management**: add, edit, delete, organize connections with folders and tags
 - **SSH interactive terminal** with full PTY support (xterm emulation, hardware keyboard input)
@@ -86,7 +87,6 @@ This is an active work-in-progress. What's working today:
 - Mobile apps (Android/iOS) - architecture is ready, UI needs mobile adaptation
 - Team vaults with shared credentials (zero-knowledge sync)
 - Plugin system for extending protocol support
-- OS keyring integration for master password caching (Windows Credential Manager / Linux Secret Service)
 
 ## Architecture
 
@@ -223,7 +223,8 @@ kremote/
 
 - **Protected against**: offline vault file theft (strong encryption), casual inspection, memory dumps after lock
 - **Not protected against**: keylogger capturing master password, memory dump while unlocked, malicious Rust/Flutter code in dependencies
-- **Future**: Hardware key support (FIDO2/YubiKey), OS keychain integration for master password
+- **Keyring security**: Cached master password (when "Remember master password" is enabled) is stored in OS-native credential stores (Windows Credential Manager uses DPAPI encryption, Linux Secret Service is encrypted per-session). This is equivalent in risk to any browser/app "remember me" feature — if an attacker has full access to your logged-in OS user account, they can retrieve stored credentials.
+- **Future**: Hardware key support (FIDO2/YubiKey)
 
 ## Usage
 

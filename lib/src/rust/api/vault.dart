@@ -32,6 +32,10 @@ abstract class Vault implements RustOpaqueInterface {
   /// being deleted.
   Future<void> deleteFolder({required String id});
 
+  /// Remove the master password from the OS keyring.
+  /// Returns Ok(()) whether or not a password was stored.
+  Future<void> deletePasswordFromKeyring();
+
   /// Export the currently unlocked vault's connections and folders as a
   /// plaintext JSON string. Callers are responsible for handling this
   /// data securely (it contains credentials in cleartext once decoded).
@@ -46,9 +50,16 @@ abstract class Vault implements RustOpaqueInterface {
   /// Get all folders.
   Future<List<Folder>> getFolders();
 
+  /// Retrieve the master password from the OS keyring.
+  /// Returns Ok(Some(password)) if found, Ok(None) if not stored, or Err if keyring access fails.
+  Future<String?> getPasswordFromKeyring();
+
   /// Add many connections at once, skipping duplicates by name+host+port
   /// (used by import). Returns the number of connections actually added.
   Future<BigInt> importConnections({required List<Connection> connections});
+
+  /// Check if a master password is currently stored in the OS keyring.
+  Future<bool> isPasswordInKeyring();
 
   /// Check if vault is currently unlocked and usable.
   Future<bool> isUnlocked();
@@ -69,6 +80,10 @@ abstract class Vault implements RustOpaqueInterface {
 
   /// Replace all connections at once (used by import).
   Future<void> replaceConnections({required List<Connection> connections});
+
+  /// Store the master password in the OS keyring for auto-unlock.
+  /// Returns Ok(()) on success, or an error if the keyring is unavailable.
+  Future<void> savePasswordToKeyring({required String password});
 
   /// Encrypt and persist the vault to disk.
   Future<void> saveToFile({required String path});

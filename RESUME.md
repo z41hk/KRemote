@@ -7,12 +7,13 @@ $env:Path = "C:\Users\User\dev\flutter\bin;" + $env:Path
 git status
 ```
 
-## Current State (v0.7.0 Released)
+## Current State (v0.8.0 - OS Keyring Integration)
 ✅ **All core SSH terminal features working**  
 ✅ **Jump host tunneling implemented and released**: https://github.com/z41hk/KRemote/releases/tag/v0.5.0  
 ✅ **Session tabs implemented and released**: https://github.com/z41hk/KRemote/releases/tag/v0.6.0  
 ✅ **Session reconnect implemented** (per-tab reconnect banner, ships alongside session tabs in v0.6.0)  
 ✅ **SSH key passphrase prompt implemented and released**: https://github.com/z41hk/KRemote/releases/tag/v0.7.0  
+✅ **OS keyring integration for master password caching** (Windows Credential Manager, ready for v0.8.0 release)  
 ✅ **Windows build released** (v0.7.0)  
 ✅ **Keyboard input bug fixed** (removed outer GestureDetector wrapper)  
 ✅ **Organization features complete** (folders, tags, filtering, import/export)
@@ -66,26 +67,37 @@ git status
 
 **Note**: `lib/screens/ssh_terminal_screen.dart` (single-terminal, non-tabbed screen) was not touched — it appears to have been superseded by the tabbed screen. Verify whether it's still referenced anywhere before removing it.
 
-### 4. Encrypted Credential Storage (CRITICAL - SECURITY)
-⚠️ **CURRENT RISK**: Passwords stored in plaintext in the vault's decrypted JSON blob once the vault is unlocked, and the vault file itself relies solely on AES-256-GCM with an Argon2id-derived key (no OS keyring backing for the master key)
+### 4. ✅ OS Keyring Integration for Master Password Caching (COMPLETED)
+**Status**: Fully implemented, targeting v0.8.0 release
 
-**Current state** (verified in `rust/src/api/vault.rs`):
-- Vault-at-rest is already AES-256-GCM encrypted with Argon2id key derivation - this part is solid
-- `Connection.password` (`rust/src/api/models.rs:21`) is a plain `Option<String>` decrypted into memory as part of `VaultData` whenever the vault is unlocked
-- There is no SQLite storage in this codebase (RESUME.md's earlier text mentioning "plaintext SQLite" is stale/inaccurate - storage is the JSON vault file via `save_to_file`/`load_from_file`)
+**Implementation Summary**:
+- Added `keyring = "2.3"` dependency to `rust/Cargo.toml` (wraps Windows Credential Manager / Linux Secret Service / macOS Keychain behind one API)
+- `rust/src/api/vault.rs` - added `save_password_to_keyring()`, `get_password_from_keyring()`, `delete_password_from_keyring()`, `is_password_in_keyring()` on `Vault`, using a fixed `KEYRING_SERVICE = "KRemote"` / `KEYRING_USER = "master_password"` entry
+- `rust/src/api/app.rs` - exposed the above as FRB functions: `save_master_password_to_keyring`, `get_master_password_from_keyring`, `delete_master_password_from_keyring`, `is_master_password_in_keyring` (sync)
+- `lib/screens/vault_screen.dart` - added a "Remember master password" checkbox on both the create-vault and unlock-vault forms:
+  - On startup, if a password is already stored in the keyring, the screen attempts a silent auto-unlock before showing the form; falls back to manual entry with an inline error if auto-unlock fails (e.g. stale/incorrect cached password)
+  - Checking the box on submit saves the just-entered password to the keyring after a successful create/unlock
+  - Unchecking it (when a password was previously stored) deletes the cached password from the keyring
+  - Keyring save/delete failures are treated as non-fatal (shown via `SnackBar`) so they never block the actual vault unlock/create flow
+- FRB bindings regenerated (`flutter_rust_bridge_codegen generate`)
 
-**Options**:
-- **OS keyring for master password** (recommended next step): avoid re-typing master password every launch by storing it in Windows Credential Manager / Linux Secret Service, gated behind an explicit user opt-in (biometric/PIN re-auth ideally)
-- **Per-field re-encryption**: encrypt each `Connection.password` individually with a derived sub-key so a memory dump of `VaultData` doesn't expose all credentials at once (defense in depth, vault file format already protects at rest)
-- **Windows**: `windows` crate or `keyring` crate (wraps DPAPI/Credential Manager)
-- **Linux**: `keyring` crate (wraps Secret Service API)
+**Security note**: This stores the plaintext master password in the OS-native credential store (DPAPI-backed on Windows), not a derived key - equivalent in risk profile to any "remember password" feature. It is opt-in (unchecked by default) and can be reverted at any time by unchecking the box or manually clearing the `KRemote` entry from Credential Manager / Secret Service.
 
-**Recommended**: Use the `keyring` crate (cross-platform wrapper) rather than hand-rolling `age` + raw keyring calls - it already abstracts Windows Credential Manager and Linux Secret Service with one API
+**Files Modified**:
+- `rust/Cargo.toml` - added `keyring = "2.3"`
+- `rust/src/api/vault.rs` - keyring read/write/delete/check methods + `#[cfg(test)]` roundtrip test
+- `rust/src/api/app.rs` - FRB-exposed keyring functions
+- `lib/screens/vault_screen.dart` - "Remember master password" checkbox, auto-unlock on startup
+- `lib/screens/home_screen.dart` - note added to `_lockVault()` about keyring lifecycle (password intentionally persists across manual lock so auto-unlock still works next launch)
 
-**Files to Modify**:
-- `rust/src/api/vault.rs` - optional: add keyring-backed master key storage/retrieval
-- `rust/Cargo.toml` - add dependency: `keyring = "2.3"`
-- `lib/screens/vault_screen.dart` - add "Remember me" / biometric unlock opt-in UI if pursuing keyring-backed unlock
+**Testing performed**:
+- `cargo test --lib keyring_roundtrip_set_get_delete` - added a real (non-mocked) test that calls `keyring::Entry::set_password`/`get_password`/`delete_password` against the actual Windows Credential Manager under a dedicated `KRemote-Test` service name (isolated from the real `KRemote` app entry) - **passed**
+- `cargo build` - compiles cleanly with the new dependency
+- `flutter analyze` - no issues
+- `flutter build windows --release` - builds successfully
+- Manually launched the release exe to confirm the vault screen renders with the new checkbox
+
+**Known limitation**: Auto-unlock has no explicit UI affordance to distinguish "checking keyring" from "checking vault file exists" during the loading spinner - both happen in `_checkVaultExists()`. Not a functional issue, just a minor UX polish item if it matters later. Also, the manual "Lock Vault" action does not clear the cached keyring password (this is intentional - locking is a session action, not an opt-out of the remember-me preference), but there's currently no dedicated settings UI to clear the keyring entry other than unchecking the box on the vault screen after unlocking.
 
 ### 5. ✅ SSH Key Passphrase Prompt (COMPLETED)
 **Status**: Fully implemented, targeting v0.7.0 release
@@ -191,10 +203,10 @@ git push origin v0.4.1
 - [ ] SSH key passphrase prompt works against a real encrypted key + live sshd (implemented in v0.7.0, `flutter analyze`/release build verified, but no live sshd was available in the dev environment to test the full prompt-then-retry loop end to end)
 
 ## Known Issues
-- ⚠️ **SECURITY**: Vault is encrypted at rest, but no OS keyring integration for master password caching (must re-enter on every launch)
 - ℹ️ SSH key passphrase prompt relies on error message string matching rather than PEM header inspection (works in practice, but could be more robust)
 - ℹ️ Jump host tunneling implemented via local TCP proxy thread; not yet verified against a live bastion host (no test SSH infrastructure available in this environment)
 - ℹ️ Old `ssh_terminal_screen.dart` may be obsolete (single-terminal screen superseded by tabbed version) - needs audit
+- ℹ️ Auto-unlock from keyring has no explicit "checking keyring..." UI affordance during the startup spinner (minor UX polish item)
 
 ## Reference Documentation
 - **ssh2-rs docs**: https://docs.rs/ssh2/latest/ssh2/
@@ -205,5 +217,5 @@ git push origin v0.4.1
 ---
 
 **Last Updated**: 2026-09-17  
-**Latest**: v0.7.0 (released) - SSH key passphrase prompt for encrypted private keys - https://github.com/z41hk/KRemote/releases/tag/v0.7.0  
-**Next Priority**: Task #4 - OS keyring integration for master password caching, or Task #6 - Connection timeout configuration
+**Latest**: v0.8.0 (ready to release) - OS keyring integration for master password caching (Windows Credential Manager / Linux Secret Service)  
+**Next Priority**: Task #6 - Connection timeout configuration, or Task #7 - Delete confirmation dialog
