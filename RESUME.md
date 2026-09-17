@@ -14,7 +14,7 @@ git status
 ✅ **Session reconnect implemented** (per-tab reconnect banner, ships alongside session tabs in v0.6.0)  
 ✅ **SSH key passphrase prompt implemented and released**: https://github.com/z41hk/KRemote/releases/tag/v0.7.0  
 ✅ **OS keyring integration for master password caching** (Windows Credential Manager, released in v0.8.0)  
-✅ **Lock Vault / Remember Password bugfixes** (ready for v0.8.1 release) - manual lock no longer auto-bounces back in, unchecking "Remember master password" clears the keyring entry immediately  
+✅ **Lock Vault / Remember Password bugfixes implemented and released**: https://github.com/z41hk/KRemote/releases/tag/v0.8.1 - manual lock no longer auto-bounces back in, unchecking "Remember master password" clears the keyring entry immediately  
 ✅ **Windows build released** (v0.7.0)  
 ✅ **Keyboard input bug fixed** (removed outer GestureDetector wrapper)  
 ✅ **Organization features complete** (folders, tags, filtering, import/export)
@@ -240,5 +240,5 @@ git push origin v0.4.1
 ---
 
 **Last Updated**: 2026-09-17  
-**Latest**: v0.8.0 (ready to release) - OS keyring integration for master password caching (Windows Credential Manager / Linux Secret Service)  
+**Latest**: v0.8.1 (released) - Lock Vault / Remember Password bugfixes - https://github.com/z41hk/KRemote/releases/tag/v0.8.1  
 **Next Priority**: Task #6 - Connection timeout configuration, or Task #7 - Delete confirmation dialog
