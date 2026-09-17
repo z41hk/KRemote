@@ -42,7 +42,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.13.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 529037595;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -981402446;
 
 // Section: executor
 
@@ -1631,6 +1631,7 @@ fn wire__crate__api__app__add_connection_impl(
             let api_folder_id = <Option<String>>::sse_decode(&mut deserializer);
             let api_tags = <Vec<String>>::sse_decode(&mut deserializer);
             let api_path = <String>::sse_decode(&mut deserializer);
+            let api_jump_host_id = <Option<String>>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, String>((move || {
@@ -1645,6 +1646,7 @@ fn wire__crate__api__app__add_connection_impl(
                         api_folder_id,
                         api_tags,
                         api_path,
+                        api_jump_host_id,
                     )?;
                     std::result::Result::Ok(output_ok)
                 })())
@@ -1920,6 +1922,39 @@ fn wire__crate__api__models__folder_new_impl(
                 transform_result_sse::<_, ()>((move || {
                     let output_ok =
                         Ok::<_, ()>(crate::api::models::Folder::new(api_name, api_parent_id))?;
+                    std::result::Result::Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__app__get_connection_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "get_connection",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_id = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, String>((move || {
+                    let output_ok = crate::api::app::get_connection(api_id)?;
                     std::result::Result::Ok(output_ok)
                 })())
             }
@@ -2609,6 +2644,7 @@ impl SseDecode for crate::api::models::Connection {
         let mut var_folderId = <Option<String>>::sse_decode(deserializer);
         let mut var_tags = <Vec<String>>::sse_decode(deserializer);
         let mut var_notes = <Option<String>>::sse_decode(deserializer);
+        let mut var_jumpHostId = <Option<String>>::sse_decode(deserializer);
         return crate::api::models::Connection {
             id: var_id,
             name: var_name,
@@ -2621,6 +2657,7 @@ impl SseDecode for crate::api::models::Connection {
             folder_id: var_folderId,
             tags: var_tags,
             notes: var_notes,
+            jump_host_id: var_jumpHostId,
         };
     }
 }
@@ -2880,19 +2917,20 @@ fn pde_ffi_dispatcher_primary_impl(
         38 => wire__crate__api__app__delete_folder_impl(port, ptr, rust_vec_len, data_len),
         39 => wire__crate__api__app__export_vault_json_impl(port, ptr, rust_vec_len, data_len),
         40 => wire__crate__api__models__folder_new_impl(port, ptr, rust_vec_len, data_len),
-        41 => wire__crate__api__app__get_connections_impl(port, ptr, rust_vec_len, data_len),
-        42 => wire__crate__api__app__get_folders_impl(port, ptr, rust_vec_len, data_len),
-        44 => wire__crate__api__app__import_mremoteng_xml_impl(port, ptr, rust_vec_len, data_len),
-        45 => wire__crate__api__simple__init_app_impl(port, ptr, rust_vec_len, data_len),
-        48 => wire__crate__api__app__open_url_impl(port, ptr, rust_vec_len, data_len),
-        49 => wire__crate__api__import__parse_mremoteng_xml_impl(port, ptr, rust_vec_len, data_len),
-        50 => wire__crate__api__app__test_connection_impl(port, ptr, rust_vec_len, data_len),
-        51 => wire__crate__api__ssh__test_ssh_connection_impl(port, ptr, rust_vec_len, data_len),
-        52 => wire__crate__api__vnc__test_vnc_connection_impl(port, ptr, rust_vec_len, data_len),
-        53 => wire__crate__api__app__unlock_vault_impl(port, ptr, rust_vec_len, data_len),
-        54 => wire__crate__api__app__update_connection_impl(port, ptr, rust_vec_len, data_len),
-        55 => wire__crate__api__app__update_folder_impl(port, ptr, rust_vec_len, data_len),
-        56 => wire__crate__api__vault__vault_data_default_impl(port, ptr, rust_vec_len, data_len),
+        41 => wire__crate__api__app__get_connection_impl(port, ptr, rust_vec_len, data_len),
+        42 => wire__crate__api__app__get_connections_impl(port, ptr, rust_vec_len, data_len),
+        43 => wire__crate__api__app__get_folders_impl(port, ptr, rust_vec_len, data_len),
+        45 => wire__crate__api__app__import_mremoteng_xml_impl(port, ptr, rust_vec_len, data_len),
+        46 => wire__crate__api__simple__init_app_impl(port, ptr, rust_vec_len, data_len),
+        49 => wire__crate__api__app__open_url_impl(port, ptr, rust_vec_len, data_len),
+        50 => wire__crate__api__import__parse_mremoteng_xml_impl(port, ptr, rust_vec_len, data_len),
+        51 => wire__crate__api__app__test_connection_impl(port, ptr, rust_vec_len, data_len),
+        52 => wire__crate__api__ssh__test_ssh_connection_impl(port, ptr, rust_vec_len, data_len),
+        53 => wire__crate__api__vnc__test_vnc_connection_impl(port, ptr, rust_vec_len, data_len),
+        54 => wire__crate__api__app__unlock_vault_impl(port, ptr, rust_vec_len, data_len),
+        55 => wire__crate__api__app__update_connection_impl(port, ptr, rust_vec_len, data_len),
+        56 => wire__crate__api__app__update_folder_impl(port, ptr, rust_vec_len, data_len),
+        57 => wire__crate__api__vault__vault_data_default_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -2906,10 +2944,10 @@ fn pde_ffi_dispatcher_sync_impl(
     // Codec=Pde (Serialization + dispatch), see doc to use other codecs
     match func_id {
         36 => wire__crate__api__app__default_vault_path_impl(ptr, rust_vec_len, data_len),
-        43 => wire__crate__api__simple__greet_impl(ptr, rust_vec_len, data_len),
-        46 => wire__crate__api__app__is_vault_unlocked_impl(ptr, rust_vec_len, data_len),
-        47 => wire__crate__api__app__lock_vault_impl(ptr, rust_vec_len, data_len),
-        57 => wire__crate__api__app__vault_exists_impl(ptr, rust_vec_len, data_len),
+        44 => wire__crate__api__simple__greet_impl(ptr, rust_vec_len, data_len),
+        47 => wire__crate__api__app__is_vault_unlocked_impl(ptr, rust_vec_len, data_len),
+        48 => wire__crate__api__app__lock_vault_impl(ptr, rust_vec_len, data_len),
+        58 => wire__crate__api__app__vault_exists_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -2976,6 +3014,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::models::Connection {
             self.folder_id.into_into_dart().into_dart(),
             self.tags.into_into_dart().into_dart(),
             self.notes.into_into_dart().into_dart(),
+            self.jump_host_id.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -3146,6 +3185,7 @@ impl SseEncode for crate::api::models::Connection {
         <Option<String>>::sse_encode(self.folder_id, serializer);
         <Vec<String>>::sse_encode(self.tags, serializer);
         <Option<String>>::sse_encode(self.notes, serializer);
+        <Option<String>>::sse_encode(self.jump_host_id, serializer);
     }
 }
 

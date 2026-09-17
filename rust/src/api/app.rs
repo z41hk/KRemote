@@ -7,7 +7,7 @@ use super::vault::Vault;
 
 /// Global vault instance, lazily initialized on first use.
 /// A single Vault is shared across all FRB calls for the app's lifetime.
-fn vault() -> &'static Vault {
+pub(crate) fn vault() -> &'static Vault {
     static VAULT: OnceLock<Vault> = OnceLock::new();
     VAULT.get_or_init(Vault::new)
 }
@@ -81,6 +81,7 @@ pub fn add_connection(
     folder_id: Option<String>,
     tags: Vec<String>,
     path: String,
+    jump_host_id: Option<String>,
 ) -> Result<Connection, String> {
     let mut connection = Connection::new(name, protocol, host, port);
     connection.username = username;
@@ -88,6 +89,7 @@ pub fn add_connection(
     connection.private_key_path = private_key_path;
     connection.folder_id = folder_id;
     connection.tags = tags;
+    connection.jump_host_id = jump_host_id;
 
     vault().add_connection(connection.clone())?;
     vault().save_to_file(&path)?;
@@ -98,6 +100,11 @@ pub fn add_connection(
 /// Retrieve all connections currently stored in the unlocked vault.
 pub fn get_connections() -> Result<Vec<Connection>, String> {
     vault().get_connections()
+}
+
+/// Retrieve a single connection by ID.
+pub fn get_connection(id: String) -> Result<Connection, String> {
+    vault().get_connection(&id)
 }
 
 /// Delete a connection by ID and persist the change to `path`.
