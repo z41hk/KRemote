@@ -110,6 +110,7 @@ fn parse_nodes(
                 folder_id: parent_folder_id.clone(),
                 tags: Vec::new(),
                 notes: description,
+                jump_host_id: None,
             };
 
             connections.push(connection);

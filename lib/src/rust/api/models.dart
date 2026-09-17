@@ -21,6 +21,7 @@ class Connection {
   final String? folderId;
   final List<String> tags;
   final String? notes;
+  final String? jumpHostId;
 
   const Connection({
     required this.id,
@@ -34,6 +35,7 @@ class Connection {
     this.folderId,
     required this.tags,
     this.notes,
+    this.jumpHostId,
   });
 
   // HINT: Make it `#[frb(sync)]` to let it become the default constructor of Dart class.
@@ -61,7 +63,8 @@ class Connection {
       privateKeyPath.hashCode ^
       folderId.hashCode ^
       tags.hashCode ^
-      notes.hashCode;
+      notes.hashCode ^
+      jumpHostId.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -78,7 +81,8 @@ class Connection {
           privateKeyPath == other.privateKeyPath &&
           folderId == other.folderId &&
           tags == other.tags &&
-          notes == other.notes;
+          notes == other.notes &&
+          jumpHostId == other.jumpHostId;
 }
 
 class Folder {

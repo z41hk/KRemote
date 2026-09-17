@@ -293,6 +293,7 @@ class _HomeScreenState extends State<HomeScreen> {
         folderId: connection.folderId,
         tags: connection.tags,
         path: defaultVaultPath(),
+        jumpHostId: connection.jumpHostId,
       );
       await _loadConnections();
       if (!mounted) return;

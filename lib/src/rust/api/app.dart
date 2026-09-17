@@ -55,6 +55,7 @@ Future<Connection> addConnection({
   String? folderId,
   required List<String> tags,
   required String path,
+  String? jumpHostId,
 }) => RustLib.instance.api.crateApiAppAddConnection(
   name: name,
   protocol: protocol,
@@ -66,11 +67,16 @@ Future<Connection> addConnection({
   folderId: folderId,
   tags: tags,
   path: path,
+  jumpHostId: jumpHostId,
 );
 
 /// Retrieve all connections currently stored in the unlocked vault.
 Future<List<Connection>> getConnections() =>
     RustLib.instance.api.crateApiAppGetConnections();
+
+/// Retrieve a single connection by ID.
+Future<Connection> getConnection({required String id}) =>
+    RustLib.instance.api.crateApiAppGetConnection(id: id);
 
 /// Delete a connection by ID and persist the change to `path`.
 Future<void> deleteConnection({required String id, required String path}) =>

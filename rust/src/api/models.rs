@@ -23,6 +23,7 @@ pub struct Connection {
     pub folder_id: Option<String>,
     pub tags: Vec<String>,
     pub notes: Option<String>,
+    pub jump_host_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -46,6 +47,7 @@ impl Connection {
             folder_id: None,
             tags: Vec::new(),
             notes: None,
+            jump_host_id: None,
         }
     }
 }

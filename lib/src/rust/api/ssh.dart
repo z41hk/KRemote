@@ -40,12 +40,10 @@ abstract class SshConnection implements RustOpaqueInterface {
   /// a local connection through it. This is the standard "jump host" /
   /// "bastion host" pattern.
   ///
-  /// Note: This stores the jump session for later tunneling but doesn't
-  /// automatically create a forwarded connection yet. The real implementation
-  /// would need to set up local port forwarding and connect through that,
-  /// which requires more complex async channel handling than ssh2 supports
-  /// out of the box. For now, this is a placeholder that demonstrates the
-  /// authentication flow.
+  /// Implementation: We create a local TCP proxy that bridges between
+  /// a loopback TcpStream (which satisfies Session::set_tcp_stream's
+  /// AsRawSocket requirement) and the SSH channel opened via
+  /// channel_direct_tcpip on the jump host.
   Future<void> connectViaJumpHost({
     required Connection connection,
     required Connection jumpHost,

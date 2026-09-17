@@ -1,6 +1,6 @@
 use ssh2::{Channel, Session};
 use std::io::{Read, Write};
-use std::net::TcpStream;
+use std::net::{TcpListener, TcpStream};
 use std::sync::{Arc, Mutex};
 use std::thread;
 
@@ -30,7 +30,18 @@ impl SshConnection {
     }
 
     /// Connect directly to `connection`'s host:port and authenticate.
+    /// If `connection.jump_host_id` is set, automatically routes through
+    /// `connect_via_jump_host` instead.
     pub fn connect(&mut self, connection: &Connection) -> Result<(), String> {
+        // If a jump host is configured, retrieve it and tunnel through it
+        if let Some(ref jump_host_id) = connection.jump_host_id {
+            let jump_host = super::app::vault()
+                .get_connection(jump_host_id)
+                .map_err(|e| format!("Failed to retrieve jump host: {}", e))?;
+            return self.connect_via_jump_host(connection, &jump_host);
+        }
+
+        // Otherwise, connect directly
         let address = format!("{}:{}", connection.host, connection.port);
 
         let tcp = TcpStream::connect(&address)
@@ -55,12 +66,10 @@ impl SshConnection {
     /// a local connection through it. This is the standard "jump host" /
     /// "bastion host" pattern.
     ///
-    /// Note: This stores the jump session for later tunneling but doesn't
-    /// automatically create a forwarded connection yet. The real implementation
-    /// would need to set up local port forwarding and connect through that,
-    /// which requires more complex async channel handling than ssh2 supports
-    /// out of the box. For now, this is a placeholder that demonstrates the
-    /// authentication flow.
+    /// Implementation: We create a local TCP proxy that bridges between
+    /// a loopback TcpStream (which satisfies Session::set_tcp_stream's
+    /// AsRawSocket requirement) and the SSH channel opened via
+    /// channel_direct_tcpip on the jump host.
     pub fn connect_via_jump_host(
         &mut self,
         connection: &Connection,
@@ -80,21 +89,93 @@ impl SshConnection {
 
         Self::authenticate(&jump_session, jump_host)?;
 
-        // For a real jump host implementation, we would:
-        // 1. Use jump_session.channel_direct_tcpip() to forward traffic
-        // 2. Wrap that channel in a custom Read+Write+AsRawSocket wrapper
-        // 3. Use that wrapper with a second SSH session
-        //
-        // ssh2's Channel doesn't implement AsRawSocket, so we'd need
-        // a more complex async bridge or use ProxyCommand-style approach.
-        //
-        // For now, just store the jump session and connect directly as a
-        // proof-of-concept. Full implementation deferred to Phase 6B.
+        // Open a direct-tcpip channel from the jump host to the target host.
+        // This creates a tunnel: jump_host -> target_host:target_port
+        let mut channel = jump_session
+            .channel_direct_tcpip(&connection.host, connection.port, None)
+            .map_err(|e| format!("Failed to open direct-tcpip channel to {}:{}: {}", 
+                connection.host, connection.port, e))?;
 
+        // Bind a local TCP listener on an ephemeral port (127.0.0.1:0)
+        // that will act as a proxy between the target SSH session and the
+        // jump host's direct-tcpip channel.
+        let listener = TcpListener::bind("127.0.0.1:0")
+            .map_err(|e| format!("Failed to bind local proxy listener: {}", e))?;
+        
+        let local_addr = listener.local_addr()
+            .map_err(|e| format!("Failed to get local address: {}", e))?;
+
+        // Spawn a background thread that accepts one connection and shuttles
+        // bytes bidirectionally between the local TcpStream and the SSH channel.
+        thread::spawn(move || {
+            // Accept exactly one connection (the target SSH session below)
+            let Ok((mut local_stream, _)) = listener.accept() else {
+                return;
+            };
+
+            // Shuttle bytes in both directions until either side closes
+            let mut buf = vec![0u8; 8192];
+            local_stream.set_nonblocking(true).ok();
+            
+            loop {
+                let mut progress = false;
+
+                // Local -> Channel
+                match local_stream.read(&mut buf) {
+                    Ok(0) => break, // EOF
+                    Ok(n) => {
+                        if channel.write_all(&buf[..n]).is_err() {
+                            break;
+                        }
+                        let _ = channel.flush();
+                        progress = true;
+                    }
+                    Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {}
+                    Err(_) => break,
+                }
+
+                // Channel -> Local
+                match channel.read(&mut buf) {
+                    Ok(0) => break, // EOF
+                    Ok(n) => {
+                        if local_stream.write_all(&buf[..n]).is_err() {
+                            break;
+                        }
+                        let _ = local_stream.flush();
+                        progress = true;
+                    }
+                    Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {}
+                    Err(_) => break,
+                }
+
+                if !progress {
+                    thread::sleep(std::time::Duration::from_millis(5));
+                }
+            }
+        });
+
+        // Give the proxy thread a moment to start listening
+        thread::sleep(std::time::Duration::from_millis(50));
+
+        // Connect to the local proxy as if it were the target SSH server.
+        // This TcpStream satisfies Session::set_tcp_stream's AsRawSocket bound.
+        let proxy_tcp = TcpStream::connect(local_addr)
+            .map_err(|e| format!("Failed to connect to local proxy: {}", e))?;
+
+        // Create a new SSH session using the proxied connection
+        let mut target_session = Session::new()
+            .map_err(|e| format!("Failed to create target session: {}", e))?;
+
+        target_session.set_tcp_stream(proxy_tcp);
+        target_session
+            .handshake()
+            .map_err(|e| format!("Target SSH handshake failed: {}", e))?;
+
+        Self::authenticate(&target_session, connection)?;
+
+        // Store both sessions so the jump session stays alive
         self._jump_session = Some(jump_session);
-
-        // Connect to the target directly (bypassing the tunnel for now)
-        self.connect(connection)?;
+        self.session = Some(target_session);
 
         Ok(())
     }
@@ -360,6 +441,7 @@ pub fn test_ssh_connection(
         folder_id: None,
         tags: Vec::new(),
         notes: None,
+        jump_host_id: None,
     };
 
     let mut ssh = SshConnection::new();

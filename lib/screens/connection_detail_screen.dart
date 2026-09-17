@@ -26,9 +26,12 @@ class _ConnectionDetailScreenState extends State<ConnectionDetailScreen> {
   bool _obscurePassword = true;
   bool _isSubmitting = false;
   String? _selectedFolderId;
+  String? _selectedJumpHostId;
   List<String> _tags = [];
   List<Folder> _folders = [];
+  List<Connection> _connections = [];
   bool _isLoadingFolders = true;
+  bool _isLoadingConnections = true;
 
   @override
   void initState() {
@@ -43,11 +46,13 @@ class _ConnectionDetailScreenState extends State<ConnectionDetailScreen> {
       _privateKeyController.text = conn.privateKeyPath ?? '';
       _selectedProtocol = conn.protocol;
       _selectedFolderId = conn.folderId;
+      _selectedJumpHostId = conn.jumpHostId;
       _tags = List<String>.from(conn.tags);
     } else {
       _portController.text = '22'; // default SSH port
     }
     _loadFolders();
+    _loadConnections();
   }
 
   Future<void> _loadFolders() async {
@@ -59,6 +64,18 @@ class _ConnectionDetailScreenState extends State<ConnectionDetailScreen> {
       });
     } catch (e) {
       setState(() => _isLoadingFolders = false);
+    }
+  }
+
+  Future<void> _loadConnections() async {
+    try {
+      final connections = await getConnections();
+      setState(() {
+        _connections = connections;
+        _isLoadingConnections = false;
+      });
+    } catch (e) {
+      setState(() => _isLoadingConnections = false);
     }
   }
 
@@ -123,6 +140,8 @@ class _ConnectionDetailScreenState extends State<ConnectionDetailScreen> {
     final path = defaultVaultPath();
 
     try {
+      final jumpHostId = _selectedProtocol == Protocol.ssh ? _selectedJumpHostId : null;
+
       if (widget.connection == null) {
         // Add new connection
         await addConnection(
@@ -136,6 +155,7 @@ class _ConnectionDetailScreenState extends State<ConnectionDetailScreen> {
           folderId: _selectedFolderId,
           tags: _tags,
           path: path,
+          jumpHostId: jumpHostId,
         );
       } else {
         // Update existing connection
@@ -151,6 +171,7 @@ class _ConnectionDetailScreenState extends State<ConnectionDetailScreen> {
           folderId: _selectedFolderId,
           tags: _tags,
           notes: widget.connection!.notes,
+          jumpHostId: jumpHostId,
         );
         await updateConnection(connection: updated, path: path);
       }
@@ -302,6 +323,36 @@ class _ConnectionDetailScreenState extends State<ConnectionDetailScreen> {
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 ),
               ),
+              const SizedBox(height: 16),
+              if (_isLoadingConnections)
+                const Center(child: CircularProgressIndicator())
+              else
+                DropdownButtonFormField<String?>(
+                  initialValue: _selectedJumpHostId,
+                  dropdownColor: const Color(0xFF1E293B),
+                  style: const TextStyle(color: Color(0xFFF8FAFC)),
+                  decoration: InputDecoration(
+                    labelText: 'Jump Host (Optional)',
+                    hintText: 'Connect via another SSH server',
+                    prefixIcon: const Icon(Icons.route_outlined),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('None (Direct Connection)'),
+                    ),
+                    ..._connections
+                        .where((c) => 
+                            c.protocol == Protocol.ssh && 
+                            c.id != widget.connection?.id)
+                        .map((conn) => DropdownMenuItem<String?>(
+                          value: conn.id,
+                          child: Text('${conn.name} (${conn.username ?? 'no-user'}@${conn.host})'),
+                        )),
+                  ],
+                  onChanged: (value) => setState(() => _selectedJumpHostId = value),
+                ),
             ],
             const SizedBox(height: 24),
             Text(
