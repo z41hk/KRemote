@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:window_manager/window_manager.dart';
 import 'package:kremote/src/rust/api/app.dart';
 import 'package:kremote/src/rust/api/models.dart';
 import 'package:kremote/src/rust/api/ssh.dart';
@@ -29,6 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
+    windowManager.setTitle('KRemote');
     _checkVaultStatus();
   }
 

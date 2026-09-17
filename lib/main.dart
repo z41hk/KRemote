@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:kremote/src/rust/frb_generated.dart';
+import 'package:window_manager/window_manager.dart';
 import 'screens/home_screen.dart';
 
 Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await windowManager.ensureInitialized();
   await RustLib.init();
   runApp(const MyApp());
 }

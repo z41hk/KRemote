@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:xterm/xterm.dart';
+import 'package:window_manager/window_manager.dart';
 import 'package:kremote/src/rust/api/app.dart';
 import 'package:kremote/src/rust/api/models.dart';
 import 'package:kremote/src/rust/api/ssh.dart';
@@ -27,7 +28,14 @@ class _TabbedTerminalScreenState extends State<TabbedTerminalScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 1, vsync: this);
+    _tabController.addListener(_updateWindowTitle);
     _addSession(widget.initialConnection);
+  }
+
+  void _updateWindowTitle() {
+    if (_sessions.isEmpty) return;
+    final activeSession = _sessions[_tabController.index];
+    windowManager.setTitle('KRemote - ${activeSession.connection.name}');
   }
 
   void _addSession(Connection connection) {
@@ -44,7 +52,9 @@ class _TabbedTerminalScreenState extends State<TabbedTerminalScreen>
         vsync: this,
         initialIndex: _sessions.length - 1,
       );
+      _tabController.addListener(_updateWindowTitle);
     });
+    _updateWindowTitle();
   }
 
   void _closeSession(int sessionId) {
@@ -67,7 +77,9 @@ class _TabbedTerminalScreenState extends State<TabbedTerminalScreen>
         vsync: this,
         initialIndex: newIndex,
       );
+      _tabController.addListener(_updateWindowTitle);
     });
+    _updateWindowTitle();
   }
 
   Future<void> _showConnectionPicker() async {

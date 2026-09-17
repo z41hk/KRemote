@@ -170,12 +170,31 @@ git status
 - `lib/screens/tabbed_terminal_screen.dart` - pass timeout to connect
 - FRB bindings regenerated
 
-### 7. Delete Confirmation Dialog
-- Show "Are you sure?" before deleting connections/folders
+### 7. ✅ Delete Confirmation Dialog (COMPLETED)
+**Status**: Already implemented, was present in codebase but not marked complete
 
-### 8. Window Title Updates
-- Set window title to active connection name
-- Update on connect/disconnect
+**Implementation Summary**:
+- `_deleteConnection()` in `home_screen.dart` (lines 177-207) shows an `AlertDialog` with "Cancel"/"Delete" before proceeding
+- `_deleteFolder()` in `home_screen.dart` (lines 1002-1039) shows confirmation with additional context: "Connections in this folder will be moved to root"
+- Both use `showDialog<bool>()` pattern and check for user confirmation before executing the actual delete operation
+- Prevents accidental deletions of connections and folders
+
+**Files Modified**:
+- `lib/screens/home_screen.dart` - confirmation dialogs already present
+
+### 8. ✅ Window Title Updates (COMPLETED)
+**Status**: Fully implemented
+
+**Implementation Summary**:
+- Home screen sets window title to "KRemote" on load (`home_screen.dart:34`)
+- Tabbed terminal screen updates title to "KRemote - {connection_name}" when active tab changes
+- `_updateWindowTitle()` method added to `TabbedTerminalScreen`, called from `initState()` and after tab changes
+- Tab controller listener attached in `_addSession()` and `_closeSession()` to track active tab switches
+- Uses `window_manager` package (already a dependency) for cross-platform window title control
+
+**Files Modified**:
+- `lib/screens/home_screen.dart` - added `windowManager.setTitle('KRemote')` in `initState()`
+- `lib/screens/tabbed_terminal_screen.dart` - added `_updateWindowTitle()` method, attached listener to `_tabController`
 
 ## Architecture Overview
 
@@ -259,4 +278,4 @@ git push origin v0.4.1
 
 **Last Updated**: 2026-09-18  
 **Latest**: v0.9.0 (ready to release) - Connection timeout configuration  
-**Next Priority**: Task #7 - Delete confirmation dialog, or Task #8 - Window title updates
+**Next Priority**: Consider RDP/VNC integration (Task #9) or other connection manager features beyond SSH
