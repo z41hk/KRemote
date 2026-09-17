@@ -7,10 +7,12 @@ $env:Path = "C:\Users\User\dev\flutter\bin;" + $env:Path
 git status
 ```
 
-## Current State (v0.5.0 Released)
+## Current State (v0.6.0 Released)
 ✅ **All core SSH terminal features working**  
 ✅ **Jump host tunneling implemented and released**: https://github.com/z41hk/KRemote/releases/tag/v0.5.0  
-✅ **Windows build released** (v0.5.0)  
+✅ **Session tabs implemented and released**: https://github.com/z41hk/KRemote/releases/tag/v0.6.0  
+✅ **Session reconnect implemented** (per-tab reconnect banner, ships alongside session tabs in v0.6.0)  
+✅ **Windows build released** (v0.6.0)  
 ✅ **Keyboard input bug fixed** (removed outer GestureDetector wrapper)  
 ✅ **Organization features complete** (folders, tags, filtering, import/export)
 
@@ -35,52 +37,54 @@ git status
 - `lib/screens/connection_detail_screen.dart` - jump host selector UI
 - `lib/screens/home_screen.dart` - clone carries jump_host_id
 
-### 2. Session Tabs (HIGH PRIORITY)
-**Goal**: Multiple SSH sessions in one window
+### 2. ✅ Session Tabs (COMPLETED)
+**Status**: Fully implemented and released in v0.6.0
 
-**Implementation Steps**:
-1. Add `TabBar` + `TabBarView` to main window
-2. Store `List<SshConnection>` in state
-3. Each tab holds one terminal widget
-4. Add close button on tabs
-5. Preserve terminal state when switching tabs
+**Implementation Summary**:
+- Added `lib/screens/tabbed_terminal_screen.dart` with `TabController` + `TabBar`/`TabBarView`
+- `TerminalSession` class holds per-tab state: `Terminal`, `SshConnection`, output subscription, focus node
+- `TabbedTerminalScreen` manages `List<TerminalSession>`, add via '+' button (connection picker dialog), close via 'X' on each tab
+- `AutomaticKeepAliveClientMixin` on `TerminalSessionView` preserves terminal state/scrollback when switching tabs
+- Visual status dot per tab: amber (connecting), red (error), green (connected)
 
-**Files to Create/Modify**:
-- `lib/screens/tabbed_terminal_screen.dart` (new file)
-- `lib/main.dart` - route to tabbed screen instead of single terminal
+**Files Modified**:
+- `lib/screens/tabbed_terminal_screen.dart` (new file, 422 lines)
+- Routing updated to open this screen instead of a single terminal screen
 
-**UI Reference**: VS Code terminal tabs, Windows Terminal
+### 3. ✅ Session Reconnect (COMPLETED)
+**Status**: Implemented as part of the session tabs work (v0.6.0), not as a separate change to `ssh_terminal_screen.dart`
 
-### 3. Session Reconnect (HIGH PRIORITY)
-**Goal**: Recover from connection loss without closing window
+**Implementation Summary**:
+- Disconnect is surfaced via the SSH output stream's `onError`/`onDone` callbacks in `TerminalSessionView._connectAndStartShell()`
+- On error, shows a red banner ("Connection lost") with a **Reconnect** button that re-invokes `_connectAndStartShell()`
+- Terminal instance (`session.terminal`) is preserved across reconnect attempts, so scrollback history is kept and new output is appended
+- `SshConnection::connect()` supports being called again since each `TerminalSession` creates a fresh `SshConnection.newInstance()` internally on reconnect
 
-**Implementation Steps**:
-1. Detect disconnect: reader thread exits → set flag in state
-2. Show banner: "Connection lost. [Reconnect]"
-3. Reconnect button: call `SshConnection::connect()` again
-4. Preserve terminal history: keep `Terminal` instance, append new output
+**Files Modified**:
+- `lib/screens/tabbed_terminal_screen.dart` - reconnect banner + retry logic (lines 348-377)
 
-**Files to Modify**:
-- `lib/screens/ssh_terminal_screen.dart` - add disconnect detection + reconnect button
-- `rust/src/api/ssh.rs` - ensure `connect()` can be called multiple times
+**Note**: `lib/screens/ssh_terminal_screen.dart` (single-terminal, non-tabbed screen) was not touched — it appears to have been superseded by the tabbed screen. Verify whether it's still referenced anywhere before removing it.
 
 ### 4. Encrypted Credential Storage (CRITICAL - SECURITY)
-⚠️ **CURRENT RISK**: Passwords stored in plaintext SQLite!
+⚠️ **CURRENT RISK**: Passwords stored in plaintext in the vault's decrypted JSON blob once the vault is unlocked, and the vault file itself relies solely on AES-256-GCM with an Argon2id-derived key (no OS keyring backing for the master key)
+
+**Current state** (verified in `rust/src/api/vault.rs`):
+- Vault-at-rest is already AES-256-GCM encrypted with Argon2id key derivation - this part is solid
+- `Connection.password` (`rust/src/api/models.rs:21`) is a plain `Option<String>` decrypted into memory as part of `VaultData` whenever the vault is unlocked
+- There is no SQLite storage in this codebase (RESUME.md's earlier text mentioning "plaintext SQLite" is stale/inaccurate - storage is the JSON vault file via `save_to_file`/`load_from_file`)
 
 **Options**:
-- **Windows**: Use DPAPI via `winapi` crate
-- **Linux**: Use Secret Service API via `secret-service` crate
-- **Cross-platform**: `age` encryption + OS keyring for master key
+- **OS keyring for master password** (recommended next step): avoid re-typing master password every launch by storing it in Windows Credential Manager / Linux Secret Service, gated behind an explicit user opt-in (biometric/PIN re-auth ideally)
+- **Per-field re-encryption**: encrypt each `Connection.password` individually with a derived sub-key so a memory dump of `VaultData` doesn't expose all credentials at once (defense in depth, vault file format already protects at rest)
+- **Windows**: `windows` crate or `keyring` crate (wraps DPAPI/Credential Manager)
+- **Linux**: `keyring` crate (wraps Secret Service API)
 
-**Recommended**: Cross-platform `age` approach
-1. Generate master key on first run
-2. Store master key in OS keyring (Windows Credential Manager / Linux Secret Service)
-3. Encrypt connection passwords with master key before SQLite insert
-4. Decrypt on load
+**Recommended**: Use the `keyring` crate (cross-platform wrapper) rather than hand-rolling `age` + raw keyring calls - it already abstracts Windows Credential Manager and Linux Secret Service with one API
 
 **Files to Modify**:
-- `rust/src/api/storage.rs` - add encryption/decryption layer
-- `rust/Cargo.toml` - add dependencies: `age = "0.10"`, `keyring = "2.3"`
+- `rust/src/api/vault.rs` - optional: add keyring-backed master key storage/retrieval
+- `rust/Cargo.toml` - add dependency: `keyring = "2.3"`
+- `lib/screens/vault_screen.dart` - add "Remember me" / biometric unlock opt-in UI if pursuing keyring-backed unlock
 
 ## Less Critical Tasks (Phase 6B)
 
@@ -162,14 +166,14 @@ git push origin v0.4.1
 - [ ] Terminal output streams correctly
 - [ ] Window resize triggers PTY resize
 - [x] Jump host tunneling works (implemented, needs manual verification against a real bastion host)
-- [ ] Session tabs work (new feature)
-- [ ] Reconnect after disconnect works (new feature)
+- [x] Session tabs work (implemented in v0.6.0)
+- [x] Reconnect after disconnect works (implemented in v0.6.0)
 
 ## Known Issues
-- ⚠️ **CRITICAL**: Credentials in plaintext SQLite (security risk)
-- ⚠️ No session reconnect (must close window)
-- ⚠️ No SSH key passphrase prompt
+- ⚠️ **SECURITY**: Vault is encrypted at rest, but no OS keyring integration for master password caching (must re-enter on every launch)
+- ⚠️ No SSH key passphrase prompt for encrypted private keys
 - ℹ️ Jump host tunneling implemented via local TCP proxy thread; not yet verified against a live bastion host (no test SSH infrastructure available in this environment)
+- ℹ️ Old `ssh_terminal_screen.dart` may be obsolete (single-terminal screen superseded by tabbed version) - needs audit
 
 ## Reference Documentation
 - **ssh2-rs docs**: https://docs.rs/ssh2/latest/ssh2/
@@ -180,5 +184,5 @@ git push origin v0.4.1
 ---
 
 **Last Updated**: 2026-09-17  
-**Latest**: v0.5.0 released with jump host tunneling  
-**Next Priority**: Session tabs (multiple terminals in one window)
+**Latest**: v0.6.0 released with session tabs + reconnect functionality  
+**Next Priority**: Task #4 - OS keyring integration for master password caching (optional security enhancement) or Task #5 - SSH key passphrase prompt (usability)
