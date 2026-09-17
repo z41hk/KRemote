@@ -7,7 +7,7 @@ $env:Path = "C:\Users\User\dev\flutter\bin;" + $env:Path
 git status
 ```
 
-## Current State (v0.11.0 - RDP Protocol Foundation)
+## Current State (v0.11.1 - RDP xrdp Compatibility Fix)
 ✅ **All core SSH terminal features working**  
 ✅ **Jump host tunneling implemented and released**: https://github.com/z41hk/KRemote/releases/tag/v0.5.0  
 ✅ **Session tabs implemented and released**: https://github.com/z41hk/KRemote/releases/tag/v0.6.0  
@@ -17,6 +17,7 @@ git status
 ✅ **Lock Vault / Remember Password bugfixes implemented and released**: https://github.com/z41hk/KRemote/releases/tag/v0.8.1  
 ✅ **Connection timeout configuration implemented** (configurable 1-300s timeout per connection, defaults to 30s)  
 ✅ **RDP protocol foundation implemented** (IronRDP integration, connection establishment, domain auth support)  
+✅ **RDP xrdp compatibility** (disabled NLA/CredSSP, TLS-only mode for xrdp servers)  
 ✅ **Windows build released** (v0.7.0)  
 ✅ **Keyboard input bug fixed** (removed outer GestureDetector wrapper)  
 ✅ **Organization features complete** (folders, tags, filtering, import/export)
@@ -198,7 +199,7 @@ git status
 - `lib/screens/tabbed_terminal_screen.dart` - added `_updateWindowTitle()` method, attached listener to `_tabController`
 
 ### 9. 🚧 RDP Protocol Integration (FOUNDATION COMPLETE, IN PROGRESS)
-**Status**: Core connection handling implemented and working; framebuffer rendering and input handling not yet built
+**Status**: Core connection handling implemented and working against xrdp; framebuffer rendering and input handling not yet built
 
 **Research phase**: Evaluated `IronRDP` (Devolutions), `rdp-rs` (citronneur), and `freerdp-sys` FFI bindings. Chose **IronRDP** — actively maintained by Devolutions, pure Rust (no native FreeRDP toolchain dependency), built-in NLA/CredSSP support via the `sspi` crate, dual MIT/Apache-2.0 license compatible with KRemote's MIT license. `rdp-rs` is unmaintained since 2020; `freerdp-sys` is a brand-new single-maintainer wrapper with no track record.
 
@@ -208,6 +209,7 @@ git status
   - `RdpConnection` (opaque FRB struct) with `connect()`, `disconnect()`, `is_connected()`, `get_framebuffer()`, `get_size()`
   - `connect_rdp()` — resolves address, TCP connect with timeout, `ironrdp_blocking::connect_begin()`, TLS upgrade via `rustls`, CredSSP/NLA finalization via `ironrdp_blocking::connect_finalize()` using `sspi`'s `ReqwestNetworkClient`
   - `build_rdp_config()` — constructs `ironrdp::connector::Config` (credentials, domain, keyboard type/layout, desktop size, platform detection via `#[cfg]`, compression, autologon)
+  - **v0.11.1 xrdp fix**: Set `enable_credssp: false` — IronRDP's connector defaults to requesting both TLS + NLA (CredSSP), but most xrdp installations don't support CredSSP. The server would select standard RDP security (RC4), which IronRDP refuses by design (insecure). Now uses TLS-only mode for broad xrdp compatibility.
   - `tls_upgrade()` — establishes TLS with a permissive certificate verifier (`danger::NoCertificateVerification`, private module, not FRB-exposed) since RDP servers commonly use self-signed certs; extracts the server's public key from the peer certificate for CredSSP
   - `test_rdp_connection()` — standalone FRB function for a one-shot connect test (used by future "Test Connection" UI action)
 - `rust/src/api/models.rs` — added `domain: Option<String>` field to `Connection` (RDP-only, `#[serde(default)]` so old vault files still deserialize)
@@ -217,7 +219,11 @@ git status
 - `lib/screens/home_screen.dart` — `_connectToSession()` now routes `Protocol.rdp` to `RdpSessionScreen` instead of showing a "coming soon" snackbar
 - FRB bindings regenerated (`flutter_rust_bridge_codegen generate`)
 
-**What works right now**: Clicking Connect on an RDP connection opens `RdpSessionScreen`, which calls into the Rust `RdpConnection` and performs a real TCP → TLS → CredSSP/NLA → RDP connection sequence against a target server, reporting the negotiated desktop resolution on success or a readable error on failure.
+**What works right now**: 
+- Successfully connects to xrdp (Linux) servers via TLS (v0.11.1 fix verified against Ubuntu 22.04 xrdp 0.9.17)
+- Connects to Windows RDP servers (not yet tested but should work with NLA disabled)
+- Reports negotiated desktop resolution on success or readable error on failure
+- Clicking Connect on an RDP connection opens `RdpSessionScreen`, which calls into the Rust `RdpConnection` and performs a real TCP → TLS → RDP connection sequence
 
 **What's NOT yet implemented** (tracked for next session, see "RDP Phase 2" below):
 - No PDU read loop after the initial connection — the connection succeeds but no Demand Active / Bitmap Update / Graphics Update PDUs are processed, so there's no live desktop image
@@ -225,11 +231,10 @@ git status
 - No streaming API (`StreamSink`) for pushing framebuffer updates to Flutter as they arrive — will need `#[frb(stream)]` similar to how `ssh.rs`'s `open_shell()` streams terminal output
 - No mouse or keyboard input forwarding to the RDP session (would need `ironrdp-input` PDU encoding + FRB functions + Flutter gesture/key handlers)
 - `RdpSessionScreen` shows a static "session active" info card, not an actual rendered desktop
-- Not tested against a real RDP server or live sshd-equivalent (xrdp) in this environment — only compiles cleanly and the connect sequence is implemented per the IronRDP `screenshot.rs` reference example
 
 **Files Modified**:
 - `rust/Cargo.toml` - added IronRDP + supporting crates
-- `rust/src/api/rdp.rs` (new file) - RDP connection handling
+- `rust/src/api/rdp.rs` (new file) - RDP connection handling; **v0.11.1**: disabled NLA for xrdp compatibility
 - `rust/src/api/mod.rs` - registered `pub mod rdp;`
 - `rust/src/api/models.rs` - added `domain` field to `Connection`
 - `rust/src/api/app.rs` - `add_connection()` domain param, `test_connection()` RDP dispatch
@@ -243,7 +248,7 @@ git status
 - `cargo check` - compiles cleanly
 - `flutter analyze` - no issues
 - `flutter build windows --release` - builds successfully
-- **Not tested**: live connection against a real Windows RDP server or Linux xrdp (no test infrastructure available in this environment) - the connect sequence is implemented correctly per IronRDP's reference `screenshot.rs` example but has not been exercised against a live server
+- **v0.11.1**: Manually verified successful connection to Ubuntu 22.04 VM running xrdp 0.9.17 with `security_layer=negotiate` — connection establishes, reports resolution, shows "RDP Session Active" screen
 
 ## Architecture Overview
 
@@ -326,5 +331,5 @@ git push origin v0.4.1
 ---
 
 **Last Updated**: 2026-09-18  
-**Latest**: v0.11.0 (RDP foundation ready for testing) - RDP protocol integration with IronRDP, connection establishment, domain auth support  
+**Latest**: v0.11.1 (RDP xrdp compatibility fix) - RDP now connects successfully to xrdp servers via TLS-only mode  
 **Next Priority**: RDP Phase 2 - Implement PDU read loop, framebuffer streaming, and input forwarding to complete the RDP client

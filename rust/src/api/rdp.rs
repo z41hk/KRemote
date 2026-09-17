@@ -157,8 +157,8 @@ fn build_rdp_config(
     Ok(connector::Config {
         credentials: Credentials::UsernamePassword { username, password },
         domain,
-        enable_tls: true,
-        enable_credssp: true,
+        enable_tls: true, // TLS required - IronRDP does not support legacy "standard RDP security" (RC4)
+        enable_credssp: false, // NLA disabled for xrdp compatibility (most xrdp installs don't support CredSSP)
         keyboard_type: KeyboardType::IbmEnhanced,
         keyboard_subtype: 0,
         keyboard_layout: 0,
