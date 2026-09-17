@@ -40,11 +40,11 @@ An open-source, cross-platform remote connection manager inspired by mRemoteNG b
 
 Pre-built binaries are available on the [Releases page](https://github.com/z41hk/KRemote/releases).
 
-**Latest: v0.4.0 (Windows x64 + Linux x64)**
-- **Windows**: Download `KRemote-v0.4.0-windows-x64.zip`, extract, and run `kremote.exe`
-- **Linux**: Download `KRemote-v0.4.0-linux-x64.tar.gz`, extract, and run `./kremote`
+**Latest: v0.5.0 (Windows x64 + Linux x64)**
+- **Windows**: Download `KRemote-v0.5.0-windows-x64.zip`, extract, and run `kremote.exe`
+- **Linux**: Download `KRemote-v0.5.0-linux-x64.tar.gz`, extract, and run `./kremote`
 - No installation required (portable)
-- New in this release: **Advanced organization features** — tags, folder tree, import/export, connection cloning, and fixed SSH keyboard input
+- New in this release: **Jump host SSH tunneling** — route SSH connections through bastion hosts with automatic TCP proxy tunneling
 - This is an early alpha — expect rough edges and breaking changes between releases
 
 ## Project Vision
@@ -66,6 +66,7 @@ This is an active work-in-progress. What's working today:
 - **Cross-platform architecture** using Flutter (UI) + Rust (crypto/network/protocol logic)
 - **Connection management**: add, edit, delete, organize connections with folders and tags
 - **SSH interactive terminal** with full PTY support (xterm emulation, hardware keyboard input)
+- **SSH jump host tunneling** - route connections through bastion hosts with automatic TCP proxy
 - **SSH connection testing** via libssh2 (password and SSH key authentication)
 - **Multi-protocol support** foundation (SSH, RDP, VNC, HTTP/HTTPS, VPN)
 - **Import/export** functionality for connection backup and migration
@@ -79,7 +80,7 @@ This is an active work-in-progress. What's working today:
 - VNC client integration (via LibVNCServer) - stub implemented
 - HTTP/HTTPS launcher (URL launcher ready)
 - VPN profile management (WireGuard)
-- Jump host / bastion SSH tunneling (field added to connection model)
+- Session tabs (multiple terminals in one window)
 - Session recording and audit logs
 - Mobile apps (Android/iOS) - architecture is ready, UI needs mobile adaptation
 - Team vaults with shared credentials (zero-knowledge sync)
@@ -274,7 +275,7 @@ kremote/
 - [ ] RDP client integration (FreeRDP)
 - [x] VNC module scaffolded (stub - needs libvncclient FFI bindings)
 - [x] HTTP/HTTPS launcher (opens system browser)
-- [x] Jump host SSH tunneling (data model + auth flow; full TCP tunnel via `channel_direct_tcpip` pending)
+- [x] Jump host SSH tunneling (full TCP proxy via `channel_direct_tcpip` - production ready)
 
 ### Phase 3: Mobile
 - [ ] Android app (UI adaptation for touch)
