@@ -7,14 +7,15 @@ $env:Path = "C:\Users\User\dev\flutter\bin;" + $env:Path
 git status
 ```
 
-## Current State (v0.8.1 - Keyring Bugfixes)
+## Current State (v0.9.0 - Connection Timeout Configuration)
 ✅ **All core SSH terminal features working**  
 ✅ **Jump host tunneling implemented and released**: https://github.com/z41hk/KRemote/releases/tag/v0.5.0  
 ✅ **Session tabs implemented and released**: https://github.com/z41hk/KRemote/releases/tag/v0.6.0  
 ✅ **Session reconnect implemented** (per-tab reconnect banner, ships alongside session tabs in v0.6.0)  
 ✅ **SSH key passphrase prompt implemented and released**: https://github.com/z41hk/KRemote/releases/tag/v0.7.0  
 ✅ **OS keyring integration for master password caching** (Windows Credential Manager, released in v0.8.0)  
-✅ **Lock Vault / Remember Password bugfixes implemented and released**: https://github.com/z41hk/KRemote/releases/tag/v0.8.1 - manual lock no longer auto-bounces back in, unchecking "Remember master password" clears the keyring entry immediately  
+✅ **Lock Vault / Remember Password bugfixes implemented and released**: https://github.com/z41hk/KRemote/releases/tag/v0.8.1  
+✅ **Connection timeout configuration implemented** (configurable 1-300s timeout per connection, defaults to 30s)  
 ✅ **Windows build released** (v0.7.0)  
 ✅ **Keyboard input bug fixed** (removed outer GestureDetector wrapper)  
 ✅ **Organization features complete** (folders, tags, filtering, import/export)
@@ -148,9 +149,26 @@ git status
 
 ## Less Critical Tasks (Phase 6B)
 
-### 6. Connection Timeout Configuration
-- Add `timeout_seconds` field to `Connection` model
-- Use `TcpStream::connect_timeout(Duration::from_secs(timeout))`
+### 6. ✅ Connection Timeout Configuration (COMPLETED)
+**Status**: Fully implemented, targeting v0.9.0 release
+
+**Implementation Summary**:
+- Added `timeout_seconds: u64` field to `Connection` model (`rust/src/api/models.rs`), default 30s
+- `SshConnection::connect()` now uses `TcpStream::connect_timeout(Duration::from_secs(timeout_seconds))` instead of the blocking `TcpStream::connect()` when `timeout_seconds > 0`
+- Added UI field to `connection_detail_screen.dart` (lines 213-245) - numeric input with validation (1-300s), shows default 30s placeholder
+- Timeout is carried through clone operation in `home_screen.dart` and passed to reconnect logic in `tabbed_terminal_screen.dart`
+- mRemoteNG import defaulted to 30s timeout
+- FRB bindings regenerated
+
+**Files Modified**:
+- `rust/src/api/models.rs` - added `timeout_seconds: u64` field
+- `rust/src/api/ssh.rs` - implemented `connect_timeout()` when timeout > 0
+- `rust/src/api/app.rs` - FRB signature updated for `add_connection()`
+- `rust/src/api/import.rs` - default timeout for imported connections
+- `lib/screens/connection_detail_screen.dart` - timeout input UI
+- `lib/screens/home_screen.dart` - clone carries timeout
+- `lib/screens/tabbed_terminal_screen.dart` - pass timeout to connect
+- FRB bindings regenerated
 
 ### 7. Delete Confirmation Dialog
 - Show "Are you sure?" before deleting connections/folders
@@ -239,6 +257,6 @@ git push origin v0.4.1
 
 ---
 
-**Last Updated**: 2026-09-17  
-**Latest**: v0.8.1 (released) - Lock Vault / Remember Password bugfixes - https://github.com/z41hk/KRemote/releases/tag/v0.8.1  
-**Next Priority**: Task #6 - Connection timeout configuration, or Task #7 - Delete confirmation dialog
+**Last Updated**: 2026-09-18  
+**Latest**: v0.9.0 (ready to release) - Connection timeout configuration  
+**Next Priority**: Task #7 - Delete confirmation dialog, or Task #8 - Window title updates
