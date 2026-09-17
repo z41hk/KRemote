@@ -107,6 +107,7 @@ fn parse_nodes(
                 username,
                 password,
                 private_key_path: None,
+                private_key_passphrase: None,
                 folder_id: parent_folder_id.clone(),
                 tags: Vec::new(),
                 notes: description,

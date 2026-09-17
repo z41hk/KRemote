@@ -40,11 +40,11 @@ An open-source, cross-platform remote connection manager inspired by mRemoteNG b
 
 Pre-built binaries are available on the [Releases page](https://github.com/z41hk/KRemote/releases).
 
-**Latest: v0.6.0 (Windows x64 + Linux x64)**
-- **Windows**: Download `KRemote-v0.6.0-windows-x64.zip`, extract, and run `kremote.exe`
-- **Linux**: Download `KRemote-v0.6.0-linux-x64.tar.gz`, extract, and run `./kremote`
+**Latest: v0.7.0 (Windows x64 + Linux x64)**
+- **Windows**: Download `KRemote-v0.7.0-windows-x64.zip`, extract, and run `kremote.exe`
+- **Linux**: Download `KRemote-v0.7.0-linux-x64.tar.gz`, extract, and run `./kremote`
 - No installation required (portable)
-- New in this release: **Session tabs** — manage multiple SSH terminals in one window with independent sessions, tab switching, and add/close controls
+- New in this release: **SSH key passphrase prompt** — connect with encrypted private keys; KRemote detects a locked key and asks for the passphrase instead of failing the connection
 - This is an early alpha — expect rough edges and breaking changes between releases
 
 ## Project Vision
@@ -67,7 +67,9 @@ This is an active work-in-progress. What's working today:
 - **Connection management**: add, edit, delete, organize connections with folders and tags
 - **SSH interactive terminal** with full PTY support (xterm emulation, hardware keyboard input)
 - **SSH session tabs** - multiple terminals in one window with independent sessions and tab controls
+- **SSH session reconnect** - per-tab reconnect banner recovers from connection loss without closing the window
 - **SSH jump host tunneling** - route connections through bastion hosts with automatic TCP proxy
+- **SSH key passphrase prompt** - connect with encrypted private keys via an on-demand passphrase dialog
 - **SSH connection testing** via libssh2 (password and SSH key authentication)
 - **Multi-protocol support** foundation (SSH, RDP, VNC, HTTP/HTTPS, VPN)
 - **Import/export** functionality for connection backup and migration
@@ -76,16 +78,15 @@ This is an active work-in-progress. What's working today:
 - **VNC client stub** ready for libvncclient integration
 
 ### 🚧 In Progress / Planned
-- Full SSH terminal emulation (currently just connection testing)
 - RDP client integration (via FreeRDP)
 - VNC client integration (via LibVNCServer) - stub implemented
 - HTTP/HTTPS launcher (URL launcher ready)
 - VPN profile management (WireGuard)
-- Session reconnect (recover from connection loss without closing window)
 - Session recording and audit logs
 - Mobile apps (Android/iOS) - architecture is ready, UI needs mobile adaptation
 - Team vaults with shared credentials (zero-knowledge sync)
 - Plugin system for extending protocol support
+- OS keyring integration for master password caching (Windows Credential Manager / Linux Secret Service)
 
 ## Architecture
 

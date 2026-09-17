@@ -18,6 +18,7 @@ class Connection {
   final String? username;
   final String? password;
   final String? privateKeyPath;
+  final String? privateKeyPassphrase;
   final String? folderId;
   final List<String> tags;
   final String? notes;
@@ -32,6 +33,7 @@ class Connection {
     this.username,
     this.password,
     this.privateKeyPath,
+    this.privateKeyPassphrase,
     this.folderId,
     required this.tags,
     this.notes,
@@ -61,6 +63,7 @@ class Connection {
       username.hashCode ^
       password.hashCode ^
       privateKeyPath.hashCode ^
+      privateKeyPassphrase.hashCode ^
       folderId.hashCode ^
       tags.hashCode ^
       notes.hashCode ^
@@ -79,6 +82,7 @@ class Connection {
           username == other.username &&
           password == other.password &&
           privateKeyPath == other.privateKeyPath &&
+          privateKeyPassphrase == other.privateKeyPassphrase &&
           folderId == other.folderId &&
           tags == other.tags &&
           notes == other.notes &&

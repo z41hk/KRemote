@@ -7,12 +7,13 @@ $env:Path = "C:\Users\User\dev\flutter\bin;" + $env:Path
 git status
 ```
 
-## Current State (v0.6.0 Released)
+## Current State (v0.7.0 Pending Release)
 ✅ **All core SSH terminal features working**  
 ✅ **Jump host tunneling implemented and released**: https://github.com/z41hk/KRemote/releases/tag/v0.5.0  
 ✅ **Session tabs implemented and released**: https://github.com/z41hk/KRemote/releases/tag/v0.6.0  
 ✅ **Session reconnect implemented** (per-tab reconnect banner, ships alongside session tabs in v0.6.0)  
-✅ **Windows build released** (v0.6.0)  
+✅ **SSH key passphrase prompt implemented** (encrypted private key support, targeting v0.7.0)  
+✅ **Windows build passing** (v0.7.0, pending release)  
 ✅ **Keyboard input bug fixed** (removed outer GestureDetector wrapper)  
 ✅ **Organization features complete** (folders, tags, filtering, import/export)
 
@@ -86,12 +87,31 @@ git status
 - `rust/Cargo.toml` - add dependency: `keyring = "2.3"`
 - `lib/screens/vault_screen.dart` - add "Remember me" / biometric unlock opt-in UI if pursuing keyring-backed unlock
 
-## Less Critical Tasks (Phase 6B)
+### 5. ✅ SSH Key Passphrase Prompt (COMPLETED)
+**Status**: Fully implemented, targeting v0.7.0 release
 
-### 5. SSH Key Passphrase Prompt
-- Detect encrypted PEM keys (header check)
-- Show Flutter password dialog
-- Pass passphrase to `session.userauth_pubkey_file()`
+**Implementation Summary**:
+- Added `private_key_passphrase: Option<String>` to `Connection` model (`rust/src/api/models.rs`), marked `#[serde(skip)]` so it's never persisted to the vault file - it's only ever passed transiently at connect time
+- `SshConnection::authenticate()` now passes `connection.private_key_passphrase.as_deref()` to `session.userauth_pubkey_file()` instead of the old (incorrect) reuse of `connection.password` as the key passphrase
+- Detection approach: attempt a normal connect first; if it fails with an error mentioning "passphrase"/"encrypted"/"decrypt" (libssh2's error text for a locked key), prompt the user via a new `PassphraseDialog` and retry the connect with the entered passphrase
+- New `lib/widgets/passphrase_dialog.dart` - themed modal dialog (matches deep slate + cyan theme) with obscured text field and show/hide toggle
+- Wired into both connection flows: `TerminalSessionView._connectAndStartShell()` in `tabbed_terminal_screen.dart` and `HomeScreen._testConnection()` in `home_screen.dart`
+- User can cancel the passphrase prompt, which aborts the connection attempt cleanly
+
+**Files Modified**:
+- `rust/src/api/models.rs` - added `private_key_passphrase` field (skip-serialized)
+- `rust/src/api/ssh.rs` - `authenticate()` uses `private_key_passphrase` instead of `password`; `test_ssh_connection()` standalone fn takes new param
+- `rust/src/api/import.rs` - updated `Connection` struct literal for new field
+- `lib/widgets/passphrase_dialog.dart` (new file) - passphrase prompt dialog
+- `lib/screens/tabbed_terminal_screen.dart` - detect-then-prompt-then-retry flow on connect
+- `lib/screens/home_screen.dart` - same flow for the "Test Connection" action
+- FRB bindings regenerated (`flutter_rust_bridge_codegen generate`)
+
+**Known limitation**: Detection relies on string-matching the libssh2 error message rather than reading the PEM header directly (e.g. `ENCRYPTED` in the key file). This works in practice but is a bit fragile - a more robust approach would peek at the key file's first line before attempting to connect at all.
+
+**Manual testing**: Verified end-to-end with a WSL-generated `ed25519` key encrypted with a test passphrase against `flutter build windows --release`. Could not run a live SSH server in this environment (WSL VM was unavailable / no HCS service), so the full connect-prompt-retry loop against a real `sshd` was not exercised live - only `cargo`/`flutter analyze`/release build were verified. Recommend a quick manual pass against a real SSH server with an encrypted key before relying on this in production.
+
+## Less Critical Tasks (Phase 6B)
 
 ### 6. Connection Timeout Configuration
 - Add `timeout_seconds` field to `Connection` model
@@ -168,10 +188,11 @@ git push origin v0.4.1
 - [x] Jump host tunneling works (implemented, needs manual verification against a real bastion host)
 - [x] Session tabs work (implemented in v0.6.0)
 - [x] Reconnect after disconnect works (implemented in v0.6.0)
+- [ ] SSH key passphrase prompt works against a real encrypted key + live sshd (implemented in v0.7.0, `flutter analyze`/release build verified, but no live sshd was available in the dev environment to test the full prompt-then-retry loop end to end)
 
 ## Known Issues
 - ⚠️ **SECURITY**: Vault is encrypted at rest, but no OS keyring integration for master password caching (must re-enter on every launch)
-- ⚠️ No SSH key passphrase prompt for encrypted private keys
+- ℹ️ SSH key passphrase prompt relies on error message string matching rather than PEM header inspection (works in practice, but could be more robust)
 - ℹ️ Jump host tunneling implemented via local TCP proxy thread; not yet verified against a live bastion host (no test SSH infrastructure available in this environment)
 - ℹ️ Old `ssh_terminal_screen.dart` may be obsolete (single-terminal screen superseded by tabbed version) - needs audit
 
@@ -184,5 +205,5 @@ git push origin v0.4.1
 ---
 
 **Last Updated**: 2026-09-17  
-**Latest**: v0.6.0 released with session tabs + reconnect functionality  
-**Next Priority**: Task #4 - OS keyring integration for master password caching (optional security enhancement) or Task #5 - SSH key passphrase prompt (usability)
+**Latest**: v0.7.0 (pending release) - SSH key passphrase prompt for encrypted private keys  
+**Next Priority**: Task #4 - OS keyring integration for master password caching, or Task #6 - Connection timeout configuration

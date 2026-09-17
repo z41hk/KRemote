@@ -5,6 +5,7 @@ import 'package:xterm/xterm.dart';
 import 'package:kremote/src/rust/api/app.dart';
 import 'package:kremote/src/rust/api/models.dart';
 import 'package:kremote/src/rust/api/ssh.dart';
+import 'package:kremote/widgets/passphrase_dialog.dart';
 
 /// Session tabs - multiple SSH terminals in one window
 class TabbedTerminalScreen extends StatefulWidget {
@@ -290,8 +291,59 @@ class _TerminalSessionViewState extends State<TerminalSessionView>
       widget.session.terminal.write(
           'Connecting to ${widget.session.connection.host}:${widget.session.connection.port}...\r\n');
 
+      // Check if the connection uses an encrypted private key and prompt for passphrase
+      Connection connectionToUse = widget.session.connection;
+      if (connectionToUse.privateKeyPath != null && 
+          connectionToUse.privateKeyPath!.isNotEmpty) {
+        // Try connecting without passphrase first
+        try {
+          final testSsh = await SshConnection.newInstance();
+          await testSsh.connect(connection: connectionToUse);
+          testSsh.disconnect();
+        } catch (e) {
+          // If connection fails and error suggests encrypted key, prompt for passphrase
+          if (e.toString().contains('passphrase') || 
+              e.toString().contains('encrypted') ||
+              e.toString().contains('decrypt')) {
+            if (!mounted) return;
+            final passphrase = await showPassphraseDialog(
+              context, 
+              connectionToUse.privateKeyPath!,
+            );
+            
+            if (passphrase == null) {
+              // User cancelled
+              if (!mounted) return;
+              setState(() {
+                widget.session.error = 'Connection cancelled';
+                widget.session.isConnecting = false;
+              });
+              widget.session.terminal.write('Connection cancelled by user.\r\n');
+              return;
+            }
+            
+            // Create new connection instance with passphrase
+            connectionToUse = Connection(
+              id: connectionToUse.id,
+              name: connectionToUse.name,
+              protocol: connectionToUse.protocol,
+              host: connectionToUse.host,
+              port: connectionToUse.port,
+              username: connectionToUse.username,
+              password: connectionToUse.password,
+              privateKeyPath: connectionToUse.privateKeyPath,
+              privateKeyPassphrase: passphrase,
+              folderId: connectionToUse.folderId,
+              tags: connectionToUse.tags,
+              notes: connectionToUse.notes,
+              jumpHostId: connectionToUse.jumpHostId,
+            );
+          }
+        }
+      }
+
       final ssh = await SshConnection.newInstance();
-      await ssh.connect(connection: widget.session.connection);
+      await ssh.connect(connection: connectionToUse);
       widget.session.sshConnection = ssh;
 
       widget.session.terminal.write('Connected. Starting shell...\r\n\r\n');

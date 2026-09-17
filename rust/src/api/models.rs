@@ -20,6 +20,8 @@ pub struct Connection {
     pub username: Option<String>,
     pub password: Option<String>,
     pub private_key_path: Option<String>,
+    #[serde(skip)]
+    pub private_key_passphrase: Option<String>,
     pub folder_id: Option<String>,
     pub tags: Vec<String>,
     pub notes: Option<String>,
@@ -44,6 +46,7 @@ impl Connection {
             username: None,
             password: None,
             private_key_path: None,
+            private_key_passphrase: None,
             folder_id: None,
             tags: Vec::new(),
             notes: None,

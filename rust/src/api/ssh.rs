@@ -192,7 +192,7 @@ impl SshConnection {
                     username,
                     None,
                     std::path::Path::new(private_key_path),
-                    connection.password.as_deref(),
+                    connection.private_key_passphrase.as_deref(),
                 )
                 .map_err(|e| format!("SSH key authentication failed: {}", e))?;
         } else if let Some(password) = &connection.password {
@@ -428,6 +428,7 @@ pub fn test_ssh_connection(
     username: String,
     password: Option<String>,
     private_key_path: Option<String>,
+    private_key_passphrase: Option<String>,
 ) -> Result<String, String> {
     let connection = Connection {
         id: "test".to_string(),
@@ -438,6 +439,7 @@ pub fn test_ssh_connection(
         username: Some(username),
         password,
         private_key_path,
+        private_key_passphrase,
         folder_id: None,
         tags: Vec::new(),
         notes: None,

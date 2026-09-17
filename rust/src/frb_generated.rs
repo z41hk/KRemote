@@ -2310,6 +2310,7 @@ fn wire__crate__api__ssh__test_ssh_connection_impl(
             let api_username = <String>::sse_decode(&mut deserializer);
             let api_password = <Option<String>>::sse_decode(&mut deserializer);
             let api_private_key_path = <Option<String>>::sse_decode(&mut deserializer);
+            let api_private_key_passphrase = <Option<String>>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, String>((move || {
@@ -2319,6 +2320,7 @@ fn wire__crate__api__ssh__test_ssh_connection_impl(
                         api_username,
                         api_password,
                         api_private_key_path,
+                        api_private_key_passphrase,
                     )?;
                     std::result::Result::Ok(output_ok)
                 })())
@@ -2641,6 +2643,7 @@ impl SseDecode for crate::api::models::Connection {
         let mut var_username = <Option<String>>::sse_decode(deserializer);
         let mut var_password = <Option<String>>::sse_decode(deserializer);
         let mut var_privateKeyPath = <Option<String>>::sse_decode(deserializer);
+        let mut var_privateKeyPassphrase = <Option<String>>::sse_decode(deserializer);
         let mut var_folderId = <Option<String>>::sse_decode(deserializer);
         let mut var_tags = <Vec<String>>::sse_decode(deserializer);
         let mut var_notes = <Option<String>>::sse_decode(deserializer);
@@ -2654,6 +2657,7 @@ impl SseDecode for crate::api::models::Connection {
             username: var_username,
             password: var_password,
             private_key_path: var_privateKeyPath,
+            private_key_passphrase: var_privateKeyPassphrase,
             folder_id: var_folderId,
             tags: var_tags,
             notes: var_notes,
@@ -3011,6 +3015,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::models::Connection {
             self.username.into_into_dart().into_dart(),
             self.password.into_into_dart().into_dart(),
             self.private_key_path.into_into_dart().into_dart(),
+            self.private_key_passphrase.into_into_dart().into_dart(),
             self.folder_id.into_into_dart().into_dart(),
             self.tags.into_into_dart().into_dart(),
             self.notes.into_into_dart().into_dart(),
@@ -3182,6 +3187,7 @@ impl SseEncode for crate::api::models::Connection {
         <Option<String>>::sse_encode(self.username, serializer);
         <Option<String>>::sse_encode(self.password, serializer);
         <Option<String>>::sse_encode(self.private_key_path, serializer);
+        <Option<String>>::sse_encode(self.private_key_passphrase, serializer);
         <Option<String>>::sse_encode(self.folder_id, serializer);
         <Vec<String>>::sse_encode(self.tags, serializer);
         <Option<String>>::sse_encode(self.notes, serializer);

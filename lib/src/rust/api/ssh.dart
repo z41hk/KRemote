@@ -19,12 +19,14 @@ Future<String> testSshConnection({
   required String username,
   String? password,
   String? privateKeyPath,
+  String? privateKeyPassphrase,
 }) => RustLib.instance.api.crateApiSshTestSshConnection(
   host: host,
   port: port,
   username: username,
   password: password,
   privateKeyPath: privateKeyPath,
+  privateKeyPassphrase: privateKeyPassphrase,
 );
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SshConnection>>
@@ -33,6 +35,8 @@ abstract class SshConnection implements RustOpaqueInterface {
   Future<void> closeShell();
 
   /// Connect directly to `connection`'s host:port and authenticate.
+  /// If `connection.jump_host_id` is set, automatically routes through
+  /// `connect_via_jump_host` instead.
   Future<void> connect({required Connection connection});
 
   /// Connect to `connection`'s host:port by first establishing an SSH

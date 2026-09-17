@@ -305,6 +305,7 @@ abstract class RustLibApi extends BaseApi {
     required String username,
     String? password,
     String? privateKeyPath,
+    String? privateKeyPassphrase,
   });
 
   Future<String> crateApiVncTestVncConnection({
@@ -2136,6 +2137,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required String username,
     String? password,
     String? privateKeyPath,
+    String? privateKeyPassphrase,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -2146,6 +2148,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_String(username, serializer);
           sse_encode_opt_String(password, serializer);
           sse_encode_opt_String(privateKeyPath, serializer);
+          sse_encode_opt_String(privateKeyPassphrase, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -2158,7 +2161,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_String,
         ),
         constMeta: kCrateApiSshTestSshConnectionConstMeta,
-        argValues: [host, port, username, password, privateKeyPath],
+        argValues: [
+          host,
+          port,
+          username,
+          password,
+          privateKeyPath,
+          privateKeyPassphrase,
+        ],
         apiImpl: this,
       ),
     );
@@ -2167,7 +2177,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateApiSshTestSshConnectionConstMeta =>
       const TaskConstMeta(
         debugName: "test_ssh_connection",
-        argNames: ["host", "port", "username", "password", "privateKeyPath"],
+        argNames: [
+          "host",
+          "port",
+          "username",
+          "password",
+          "privateKeyPath",
+          "privateKeyPassphrase",
+        ],
       );
 
   @override
@@ -2516,8 +2533,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Connection dco_decode_connection(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 12)
-      throw Exception('unexpected arr length: expect 12 but see ${arr.length}');
+    if (arr.length != 13)
+      throw Exception('unexpected arr length: expect 13 but see ${arr.length}');
     return Connection(
       id: dco_decode_String(arr[0]),
       name: dco_decode_String(arr[1]),
@@ -2527,10 +2544,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       username: dco_decode_opt_String(arr[5]),
       password: dco_decode_opt_String(arr[6]),
       privateKeyPath: dco_decode_opt_String(arr[7]),
-      folderId: dco_decode_opt_String(arr[8]),
-      tags: dco_decode_list_String(arr[9]),
-      notes: dco_decode_opt_String(arr[10]),
-      jumpHostId: dco_decode_opt_String(arr[11]),
+      privateKeyPassphrase: dco_decode_opt_String(arr[8]),
+      folderId: dco_decode_opt_String(arr[9]),
+      tags: dco_decode_list_String(arr[10]),
+      notes: dco_decode_opt_String(arr[11]),
+      jumpHostId: dco_decode_opt_String(arr[12]),
     );
   }
 
@@ -2829,6 +2847,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_username = sse_decode_opt_String(deserializer);
     var var_password = sse_decode_opt_String(deserializer);
     var var_privateKeyPath = sse_decode_opt_String(deserializer);
+    var var_privateKeyPassphrase = sse_decode_opt_String(deserializer);
     var var_folderId = sse_decode_opt_String(deserializer);
     var var_tags = sse_decode_list_String(deserializer);
     var var_notes = sse_decode_opt_String(deserializer);
@@ -2842,6 +2861,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       username: var_username,
       password: var_password,
       privateKeyPath: var_privateKeyPath,
+      privateKeyPassphrase: var_privateKeyPassphrase,
       folderId: var_folderId,
       tags: var_tags,
       notes: var_notes,
@@ -3180,6 +3200,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_opt_String(self.username, serializer);
     sse_encode_opt_String(self.password, serializer);
     sse_encode_opt_String(self.privateKeyPath, serializer);
+    sse_encode_opt_String(self.privateKeyPassphrase, serializer);
     sse_encode_opt_String(self.folderId, serializer);
     sse_encode_list_String(self.tags, serializer);
     sse_encode_opt_String(self.notes, serializer);
@@ -3349,6 +3370,8 @@ class SshConnectionImpl extends RustOpaque implements SshConnection {
       RustLib.instance.api.crateApiSshSshConnectionCloseShell(that: this);
 
   /// Connect directly to `connection`'s host:port and authenticate.
+  /// If `connection.jump_host_id` is set, automatically routes through
+  /// `connect_via_jump_host` instead.
   Future<void> connect({required Connection connection}) => RustLib.instance.api
       .crateApiSshSshConnectionConnect(that: this, connection: connection);
 

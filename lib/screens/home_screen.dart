@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:kremote/src/rust/api/app.dart';
 import 'package:kremote/src/rust/api/models.dart';
+import 'package:kremote/src/rust/api/ssh.dart';
+import 'package:kremote/widgets/passphrase_dialog.dart';
 import 'vault_screen.dart';
 import 'connection_detail_screen.dart';
 import 'tabbed_terminal_screen.dart';
@@ -212,7 +214,74 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     try {
-      final result = await testConnection(connectionId: connection.id);
+      // Check if connection uses an encrypted private key
+      Connection connectionToUse = connection;
+      if (connection.privateKeyPath != null && 
+          connection.privateKeyPath!.isNotEmpty) {
+        // Try connecting without passphrase first
+        try {
+          final testSsh = await SshConnection.newInstance();
+          await testSsh.connect(connection: connection);
+          testSsh.disconnect();
+        } catch (e) {
+          // If error suggests encrypted key, prompt for passphrase
+          if (e.toString().contains('passphrase') || 
+              e.toString().contains('encrypted') ||
+              e.toString().contains('decrypt')) {
+            if (!mounted) return;
+            Navigator.pop(context); // Close loading dialog
+            
+            final passphrase = await showPassphraseDialog(
+              context, 
+              connection.privateKeyPath!,
+            );
+            
+            if (passphrase == null) {
+              // User cancelled
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Test cancelled'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+              return;
+            }
+            
+            // Create connection with passphrase
+            connectionToUse = Connection(
+              id: connection.id,
+              name: connection.name,
+              protocol: connection.protocol,
+              host: connection.host,
+              port: connection.port,
+              username: connection.username,
+              password: connection.password,
+              privateKeyPath: connection.privateKeyPath,
+              privateKeyPassphrase: passphrase,
+              folderId: connection.folderId,
+              tags: connection.tags,
+              notes: connection.notes,
+              jumpHostId: connection.jumpHostId,
+            );
+            
+            // Show loading dialog again
+            if (!mounted) return;
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => const Center(child: CircularProgressIndicator()),
+            );
+          }
+        }
+      }
+
+      // Actually test the connection
+      final ssh = await SshConnection.newInstance();
+      await ssh.connect(connection: connectionToUse);
+      final result = await ssh.testConnection();
+      ssh.disconnect();
+      
       if (!mounted) return;
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
