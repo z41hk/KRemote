@@ -344,16 +344,10 @@ class _HomeScreenState extends State<HomeScreen> {
   void _lockVault() {
     lockVault();
     
-    // Optionally clear stored password from keyring on manual lock
-    // (commented out - user preference should persist across sessions)
-    // try {
-    //   deleteMasterPasswordFromKeyring();
-    // } catch (e) {
-    //   // Non-fatal
-    // }
-    
+    // Pass skipAutoUnlock: true so the user can actually log out
+    // even if they have "Remember password" enabled
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const VaultScreen()),
+      MaterialPageRoute(builder: (_) => const VaultScreen(skipAutoUnlock: true)),
     );
   }
 

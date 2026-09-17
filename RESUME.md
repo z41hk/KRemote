@@ -7,13 +7,14 @@ $env:Path = "C:\Users\User\dev\flutter\bin;" + $env:Path
 git status
 ```
 
-## Current State (v0.8.0 - OS Keyring Integration)
+## Current State (v0.8.1 - Keyring Bugfixes)
 ✅ **All core SSH terminal features working**  
 ✅ **Jump host tunneling implemented and released**: https://github.com/z41hk/KRemote/releases/tag/v0.5.0  
 ✅ **Session tabs implemented and released**: https://github.com/z41hk/KRemote/releases/tag/v0.6.0  
 ✅ **Session reconnect implemented** (per-tab reconnect banner, ships alongside session tabs in v0.6.0)  
 ✅ **SSH key passphrase prompt implemented and released**: https://github.com/z41hk/KRemote/releases/tag/v0.7.0  
-✅ **OS keyring integration for master password caching** (Windows Credential Manager, ready for v0.8.0 release)  
+✅ **OS keyring integration for master password caching** (Windows Credential Manager, released in v0.8.0)  
+✅ **Lock Vault / Remember Password bugfixes** (ready for v0.8.1 release) - manual lock no longer auto-bounces back in, unchecking "Remember master password" clears the keyring entry immediately  
 ✅ **Windows build released** (v0.7.0)  
 ✅ **Keyboard input bug fixed** (removed outer GestureDetector wrapper)  
 ✅ **Organization features complete** (folders, tags, filtering, import/export)
@@ -97,7 +98,29 @@ git status
 - `flutter build windows --release` - builds successfully
 - Manually launched the release exe to confirm the vault screen renders with the new checkbox
 
-**Known limitation**: Auto-unlock has no explicit UI affordance to distinguish "checking keyring" from "checking vault file exists" during the loading spinner - both happen in `_checkVaultExists()`. Not a functional issue, just a minor UX polish item if it matters later. Also, the manual "Lock Vault" action does not clear the cached keyring password (this is intentional - locking is a session action, not an opt-out of the remember-me preference), but there's currently no dedicated settings UI to clear the keyring entry other than unchecking the box on the vault screen after unlocking.
+**Known limitation**: Auto-unlock has no explicit UI affordance to distinguish "checking keyring" from "checking vault file exists" during the loading spinner - both happen in `_checkVaultExists()`. Not a functional issue, just a minor UX polish item if it matters later.
+
+### 4a. ✅ Bugfix: Lock Vault / Remember Password interaction (v0.8.1)
+**Status**: Fixed, two related bugs found after v0.8.0 shipped
+
+**Bug 1 - "Lock Vault" instantly auto-logged back in**:
+- Root cause: `_lockVault()` in `home_screen.dart` navigated back to `VaultScreen()`, whose `initState()` always checked the keyring and auto-unlocked if a password was cached - so pressing "Lock Vault" appeared to do nothing (screen flashed and went straight back to `HomeScreen`)
+- Fix: Added `skipAutoUnlock` constructor param to `VaultScreen`. `_lockVault()` now navigates to `VaultScreen(skipAutoUnlock: true)`, and `_checkVaultExists()` respects that flag to skip the `_tryAutoUnlock()` call. Manual lock now actually shows the unlock form instead of bouncing straight through.
+
+**Bug 2 - Unchecking "Remember master password" didn't take effect until a second logout**:
+- Root cause: The checkbox's `onChanged` only updated local state (`_rememberPassword`); the actual `deleteMasterPasswordFromKeyring()` call was deferred until `_submit()` ran, inside an `else if (_hasStoredPassword)` branch. So unchecking the box and closing the app without submitting (or unchecking after `_tryAutoUnlock()` had already logged the user in past the form) left the stale credential in Windows Credential Manager, causing the auto-login to keep firing on next launch.
+- Fix: Replaced the inline `onChanged`/`onTap` handlers with a single `_handleRememberPasswordChanged()` method that calls `deleteMasterPasswordFromKeyring()` and resets `_hasStoredPassword = false` **immediately** when the box is unchecked, rather than waiting for form submission. `_submit()` no longer has a delete branch at all - it only ever saves (when checked), since unchecking is now handled eagerly at the checkbox level.
+
+**Files Modified**:
+- `lib/screens/vault_screen.dart` - added `skipAutoUnlock` widget param; added `_handleRememberPasswordChanged()`; simplified `_submit()` to drop the dead delete-on-uncheck branch
+- `lib/screens/home_screen.dart` - `_lockVault()` passes `skipAutoUnlock: true`
+
+**Testing performed**:
+- `flutter analyze` - no issues
+- `flutter build windows --release` - builds successfully
+- Manually verified: check "Remember master password" → unlock → close app → reopen → auto-unlocks (unchanged behavior)
+- Manually verified: from Home screen, press "Lock Vault" → now correctly shows the unlock form instead of bouncing back to Home
+- Manually verified: on the unlock form (after a manual lock), uncheck "Remember master password" → close app immediately without submitting → reopen → prompts for password instead of auto-unlocking (this was the reported bug, now fixed)
 
 ### 5. ✅ SSH Key Passphrase Prompt (COMPLETED)
 **Status**: Fully implemented, targeting v0.7.0 release

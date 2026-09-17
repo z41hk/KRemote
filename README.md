@@ -40,11 +40,12 @@ An open-source, cross-platform remote connection manager inspired by mRemoteNG b
 
 Pre-built binaries are available on the [Releases page](https://github.com/z41hk/KRemote/releases).
 
-**Latest: v0.8.0 (Windows x64 + Linux x64)**
-- **Windows**: Download `KRemote-v0.8.0-windows-x64.zip`, extract, and run `kremote.exe`
-- **Linux**: Download `KRemote-v0.8.0-linux-x64.tar.gz`, extract, and run `./kremote`
+**Latest: v0.8.1 (Windows x64 + Linux x64)**
+- **Windows**: Download `KRemote-v0.8.1-windows-x64.zip`, extract, and run `kremote.exe`
+- **Linux**: Download `KRemote-v0.8.1-linux-x64.tar.gz`, extract, and run `./kremote`
 - No installation required (portable)
-- New in this release: **OS keyring integration** — optionally cache your master password in Windows Credential Manager or Linux Secret Service for automatic vault unlock on startup (opt-in via "Remember master password" checkbox)
+- Bugfix release: **Lock Vault now actually logs you out** — pressing "Lock Vault" no longer instantly auto-unlocks again when "Remember master password" is enabled; unchecking that box now clears the saved credential from Windows Credential Manager / Linux Secret Service immediately instead of waiting for the next successful unlock
+- Also in v0.8.0: **OS keyring integration** — optionally cache your master password for automatic vault unlock on startup (opt-in via "Remember master password" checkbox)
 - This is an early alpha — expect rough edges and breaking changes between releases
 
 ## Project Vision
@@ -262,7 +263,7 @@ kremote/
 
 - Click the 🔒 lock icon in the app bar
 - All decrypted data is cleared from memory
-- You'll need to re-enter your master password to unlock
+- You'll need to re-enter your master password to unlock (unless "Remember master password" is enabled, in which case it auto-unlocks again on the next launch — uncheck that box to require manual entry)
 
 ## Roadmap
 

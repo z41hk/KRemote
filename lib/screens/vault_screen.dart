@@ -5,7 +5,11 @@ import 'home_screen.dart';
 /// Shown at app startup when no vault exists yet (create flow) or when
 /// an existing vault needs to be unlocked with the master password.
 class VaultScreen extends StatefulWidget {
-  const VaultScreen({super.key});
+  /// If true, skips auto-unlock even if password is stored in keyring.
+  /// Used when user explicitly locks the vault.
+  final bool skipAutoUnlock;
+  
+  const VaultScreen({super.key, this.skipAutoUnlock = false});
 
   @override
   State<VaultScreen> createState() => _VaultScreenState();
@@ -48,7 +52,8 @@ class _VaultScreenState extends State<VaultScreen> {
     });
 
     // If we have a stored password and the vault exists, try auto-unlock
-    if (_vaultExists && _hasStoredPassword) {
+    // (unless user explicitly locked the vault)
+    if (_vaultExists && _hasStoredPassword && !widget.skipAutoUnlock) {
       await _tryAutoUnlock();
     }
   }
@@ -74,6 +79,38 @@ class _VaultScreenState extends State<VaultScreen> {
     }
   }
 
+  /// Called whenever the "Remember master password" checkbox is toggled.
+  /// Unchecking it immediately clears any stored credential from the OS
+  /// keyring (Windows Credential Manager / Linux Secret Service) rather
+  /// than waiting for the user to submit the form. This prevents the
+  /// "logged out but still auto-logs back in" bug where a stale credential
+  /// stuck around until the next successful unlock+submit cycle.
+  Future<void> _handleRememberPasswordChanged(bool? value) async {
+    final newValue = value ?? false;
+
+    setState(() {
+      _rememberPassword = newValue;
+    });
+
+    if (!newValue && _hasStoredPassword) {
+      // User unchecked the box - clear the stored credential and reset
+      // the auto-login state right away, regardless of whether they go
+      // on to submit the form.
+      try {
+        await deleteMasterPasswordFromKeyring();
+        if (!mounted) return;
+        setState(() {
+          _hasStoredPassword = false;
+        });
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to clear saved password: $e')),
+        );
+      }
+    }
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -92,23 +129,19 @@ class _VaultScreenState extends State<VaultScreen> {
         await createVault(masterPassword: password, path: path);
       }
 
-      // If "Remember me" is checked, save password to keyring
+      // If "Remember me" is checked, save password to keyring.
+      // (Unchecking is handled immediately in _handleRememberPasswordChanged,
+      // so there's no "else delete" branch needed here anymore.)
       if (_rememberPassword) {
         try {
           await saveMasterPasswordToKeyring(password: password);
+          _hasStoredPassword = true;
         } catch (e) {
           // Non-fatal: just log the error, don't block the unlock
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Failed to save password: $e')),
           );
-        }
-      } else if (_hasStoredPassword) {
-        // User unchecked "Remember me", so delete the stored password
-        try {
-          await deleteMasterPasswordFromKeyring();
-        } catch (e) {
-          // Non-fatal
         }
       }
 
@@ -230,20 +263,14 @@ class _VaultScreenState extends State<VaultScreen> {
                     children: [
                       Checkbox(
                         value: _rememberPassword || _hasStoredPassword,
-                        onChanged: (value) {
-                          setState(() {
-                            _rememberPassword = value ?? false;
-                          });
-                        },
+                        onChanged: _handleRememberPasswordChanged,
                         activeColor: const Color(0xFF22D3EE),
                       ),
                       Expanded(
                         child: GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _rememberPassword = !(_rememberPassword || _hasStoredPassword);
-                            });
-                          },
+                          onTap: () => _handleRememberPasswordChanged(
+                            !(_rememberPassword || _hasStoredPassword),
+                          ),
                           child: Text(
                             'Remember master password',
                             style: TextStyle(
